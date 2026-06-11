@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import com.sapo.mock.clothing.domain.entity.Role;
 
 @Getter
 @Setter
@@ -20,10 +19,10 @@ public class ResLoginDTO {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class UserLogin {
-        private long id;
-        private String email;
-        private String name;
-        private Role role;
+        private int id;
+        private String username;
+        private String fullName;
+        private String role;
     }
 
     @Getter
@@ -39,8 +38,8 @@ public class ResLoginDTO {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class UserInsideToken {
-        private long id;
-        private String email;
-        private String name;
+        private int id;
+        private String username;
+        private String fullName;
     }
 }

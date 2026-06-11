@@ -55,18 +55,18 @@ public class SecurityUtil {
     /**
      * Tạo JWT access token sau khi đăng nhập thành công.
      *
-     * @param email    email của người dùng (subject của token)
+     * @param username username của người dùng (subject của token)
      * @param dto      đối tượng chứa thông tin user để nhúng vào claims
      * @return chuỗi JWT access token có thời hạn 24 giờ
      */
-    public String createAccessToken(String email, ResLoginDTO dto) {
+    public String createAccessToken(String username, ResLoginDTO dto) {
         ResLoginDTO.UserInsideToken userInsideToken = buildUserInsideToken(dto);
 
         Instant now = Instant.now();
         JwtClaimsSet claims = JwtClaimsSet.builder()
             .issuedAt(now)
             .expiresAt(now.plus(accessTokenValidityInSeconds, ChronoUnit.SECONDS))
-            .subject(email)
+            .subject(username)
             .claim("user", userInsideToken)
             .build();
 
@@ -76,18 +76,18 @@ public class SecurityUtil {
     /**
      * Tạo JWT refresh token có thời hạn dài hơn access token (7 ngày).
      *
-     * @param email    email của người dùng
+     * @param username username của người dùng
      * @param dto      đối tượng chứa thông tin user
      * @return chuỗi JWT refresh token
      */
-    public String createRefreshToken(String email, ResLoginDTO dto) {
+    public String createRefreshToken(String username, ResLoginDTO dto) {
         ResLoginDTO.UserInsideToken userInsideToken = buildUserInsideToken(dto);
 
         Instant now = Instant.now();
         JwtClaimsSet claims = JwtClaimsSet.builder()
             .issuedAt(now)
             .expiresAt(now.plus(refreshTokenValidityInSeconds, ChronoUnit.SECONDS))
-            .subject(email)
+            .subject(username)
             .claim("user", userInsideToken)
             .build();
 
@@ -95,16 +95,16 @@ public class SecurityUtil {
     }
 
     /**
-     * Lấy email của người dùng đang đăng nhập từ SecurityContext.
+     * Lấy username của người dùng đang đăng nhập từ SecurityContext.
      *
-     * @return Optional chứa email, hoặc empty nếu chưa xác thực
+     * @return Optional chứa username, hoặc empty nếu chưa xác thực
      */
     public static Optional<String> getCurrentUserLogin() {
         SecurityContext securityContext = SecurityContextHolder.getContext();
-        return Optional.ofNullable(extractEmailFromAuthentication(securityContext.getAuthentication()));
+        return Optional.ofNullable(extractUsernameFromAuthentication(securityContext.getAuthentication()));
     }
 
-    private static String extractEmailFromAuthentication(Authentication authentication) {
+    private static String extractUsernameFromAuthentication(Authentication authentication) {
         if (authentication == null) {
             return null;
         }
@@ -117,8 +117,8 @@ public class SecurityUtil {
     private ResLoginDTO.UserInsideToken buildUserInsideToken(ResLoginDTO dto) {
         ResLoginDTO.UserInsideToken userInsideToken = new ResLoginDTO.UserInsideToken();
         userInsideToken.setId(dto.getUser().getId());
-        userInsideToken.setEmail(dto.getUser().getEmail());
-        userInsideToken.setName(dto.getUser().getName());
+        userInsideToken.setUsername(dto.getUser().getUsername());
+        userInsideToken.setFullName(dto.getUser().getFullName());
         return userInsideToken;
     }
 

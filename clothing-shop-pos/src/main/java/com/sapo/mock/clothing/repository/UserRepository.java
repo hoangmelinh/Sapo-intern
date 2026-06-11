@@ -7,8 +7,8 @@ import org.springframework.stereotype.Repository;
 import com.sapo.mock.clothing.domain.entity.User;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
-    User findByEmail(String email);
-    boolean existsByEmail(String email);
-    User findByRefreshTokenAndEmail(String refreshToken, String email);
+public interface UserRepository extends JpaRepository<User, Integer>, JpaSpecificationExecutor<User> {
+    User findByUsername(String username);
+    boolean existsByUsername(String username);
+    User findByRefreshTokenAndUsername(String refreshToken, String username);
 }

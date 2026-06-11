@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-ClothingShopPosApplication<clothing-shop-pos>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.sapo.mock.clothing.ClothingShopPosApplication",
+            "projectName": "clothing-shop-pos",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
