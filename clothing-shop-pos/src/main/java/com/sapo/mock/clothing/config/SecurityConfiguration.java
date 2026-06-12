@@ -26,7 +26,7 @@ import javax.crypto.spec.SecretKeySpec;
 @EnableMethodSecurity(securedEnabled = true)
 public class SecurityConfiguration {
 
-    @Value("${hoangmelinh.jwt.base64-secret}")
+    @Value("${sapo.jwt.base64-secret}")
     private String jwtBase64Secret;
 
     private static final String[] WHITE_LIST = {

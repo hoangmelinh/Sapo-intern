@@ -1,6 +1,6 @@
 package com.sapo.mock.clothing.config;
 
-import com.sapo.mock.clothing.service.UserService;
+import com.sapo.mock.clothing.user.service.UserService;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -25,7 +25,7 @@ public class UserDetailsCustom implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        com.sapo.mock.clothing.domain.entity.User systemUser = userService.getUserByUsername(username);
+        com.sapo.mock.clothing.user.entity.User systemUser = userService.getUserByUsername(username);
         if (systemUser == null) {
             throw new UsernameNotFoundException("Không tìm thấy tài khoản: " + username);
         }

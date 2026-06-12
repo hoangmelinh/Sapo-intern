@@ -1,6 +1,6 @@
 package com.sapo.mock.clothing.util;
 
-import com.sapo.mock.clothing.domain.response.RestResponse;
+import com.sapo.mock.clothing.common.dto.response.RestResponse;
 import com.sapo.mock.clothing.util.annotation.ApiMessage;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.core.MethodParameter;

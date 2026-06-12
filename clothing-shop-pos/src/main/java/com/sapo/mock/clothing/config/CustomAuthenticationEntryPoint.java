@@ -1,7 +1,7 @@
 package com.sapo.mock.clothing.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sapo.mock.clothing.domain.response.RestResponse;
+import com.sapo.mock.clothing.common.dto.response.RestResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;

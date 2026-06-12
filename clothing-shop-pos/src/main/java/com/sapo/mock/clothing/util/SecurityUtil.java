@@ -1,6 +1,6 @@
 package com.sapo.mock.clothing.util;
 
-import com.sapo.mock.clothing.domain.response.ResLoginDTO;
+import com.sapo.mock.clothing.auth.dto.response.ResLoginDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -27,10 +27,10 @@ public class SecurityUtil {
 
     public static final MacAlgorithm JWT_ALGORITHM = MacAlgorithm.HS512;
 
-    @Value("${hoangmelinh.jwt.access-token-validity-in-seconds}")
+    @Value("${sapo.jwt.access-token-validity-in-seconds}")
     private long accessTokenValidityInSeconds;
 
-    @Value("${hoangmelinh.jwt.refresh-token-validity-in-seconds}")
+    @Value("${sapo.jwt.refresh-token-validity-in-seconds}")
     private long refreshTokenValidityInSeconds;
 
     private final JwtEncoder jwtEncoder;
