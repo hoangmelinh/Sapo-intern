@@ -1,78 +1,91 @@
+
 package com.sapo.mock.clothing.entity;
 
-import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-
+@Entity
+@Table(name = "product")
 @Getter
 @Setter
 @NoArgsConstructor
-@Entity
-@Table(name = "product")
+@AllArgsConstructor
+@Builder
+
 public class Product {
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Integer id;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+	@Column(nullable = false, unique = true, length = 50)
+	private String sku;
 
-    @Column(nullable = false, unique = true, length = 50)
-    private String sku;
+	@Column(nullable = false)
+	private String name;
 
-    @Column(nullable = false, length = 255)
-    private String name;
+	@Column(length = 100)
+	private String category;
 
-    @Column(length = 100)
-    private String category;
+	@Column(length = 50)
+	private String color;
 
-    @Column(length = 50)
-    private String color;
+	@Column(length = 20)
+	private String size;
 
-    @Column(length = 20)
-    private String size;
+	@Column(name = "sale_price", nullable = false, precision = 15, scale = 2)
+	private BigDecimal salePrice;
 
-    @Column(name = "sale_price", nullable = false, precision = 15, scale = 2)
-    private BigDecimal salePrice;
+	@Column(name = "import_price", precision = 15, scale = 2)
+	private BigDecimal importPrice;
 
-    @Column(name = "import_price", precision = 15, scale = 2)
-    private BigDecimal importPrice;
+	private String description;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+	@Column(name = "image_urls", columnDefinition = "json")
+	private String imageUrls;
 
-    @Column(name = "image_url", length = 500)
-    private String imageUrl;
+	@Column(name = "low_stock_threshold", nullable = false)
+	private Integer lowStockThreshold = 5;
 
-    @Column(name = "low_stock_threshold", nullable = false)
-    private int lowStockThreshold = 5;
+	@Column(name = "is_deleted", nullable = false)
+	private Boolean isDeleted = false;
 
-    @Column(name = "is_deleted", nullable = false)
-    private boolean deleted = false;
+	@CreationTimestamp
+	@Column(name = "created_at", nullable = false, updatable = false)
+	private LocalDateTime createdAt;
 
-    @Column(columnDefinition = "JSON")
-    private String attributes;
+	@org.hibernate.annotations.UpdateTimestamp
+	@Column(name = "updated_at")
+	private LocalDateTime updatedAt;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "updated_by")
+	private User updatedBy;
 
-    @Column(name = "updated_at")
-    private Instant updatedAt;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "updated_by")
-    private User updatedBy;
-
-    @PrePersist
-    public void prePersist() {
-        this.createdAt = Instant.now();
-        this.updatedAt = Instant.now();
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = Instant.now();
-    }
+//	@PrePersist
+//	public void prePersist() {
+//		this.createdAt = Instant.now();
+//		this.updatedAt = Instant.now();
+//	}
+//
+//	@PreUpdate
+//	public void preUpdate() {
+//		this.updatedAt = Instant.now();
+//	}
 }
