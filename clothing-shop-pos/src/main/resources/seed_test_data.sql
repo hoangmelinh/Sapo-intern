@@ -1,6 +1,7 @@
 -- =============================================
 -- Chạy SAU KHI đã tạo DB bằng script chính
 -- Password tất cả: 123456
+-- hello
 -- =============================================
 
 USE clothing_shop_db;
