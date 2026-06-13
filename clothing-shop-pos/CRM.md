@@ -2,6 +2,8 @@
 
 ## 📅 Nhật ký cập nhật (13/06/2026)
 
+Thêm entity CustomerGroup  
+
 ### 🔹 Cải tiến hệ thống xử lý ngoại lệ
 
 * Đức đã bổ sung cơ chế bắt lỗi 400 Runtime Exception tập trung trong `GlobalExceptionHandler`.
@@ -22,6 +24,7 @@ Cấu hình được bổ sung trong `SecurityConfiguration`.
 * Thêm `CustomerStatusEnum` trong package `constant`.
 * Chuyển đổi trường `gender` từ `String` ➜ `GenderEnum`. ==> entity Customer
 * Chuyển đổi trường `status` từ `String` ➜ `CustomerStatusEnum` ==> entity Customer
+* thêm private CustomerGroup customerGroup; ==> entity Customer
 * Tăng tính an toàn dữ liệu (Type Safety) và hạn chế lỗi nhập liệu.
 
 ---

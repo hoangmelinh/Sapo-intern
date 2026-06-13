@@ -1,4 +1,4 @@
-package com.sapo.mock.clothing.crm.dto.request;
+package com.sapo.mock.clothing.crm.dto.request.customer;
 
 import com.sapo.mock.clothing.util.constant.GenderEnum;
 import jakarta.validation.constraints.*;
