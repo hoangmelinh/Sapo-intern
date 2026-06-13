@@ -1,8 +1,8 @@
 package com.sapo.mock.clothing.crm.controller;
 
 import com.sapo.mock.clothing.common.dto.response.RestResponse;
-import com.sapo.mock.clothing.crm.dto.request.CustomerCreateRequest;
-import com.sapo.mock.clothing.crm.dto.request.CustomerUpdateRequest;
+import com.sapo.mock.clothing.crm.dto.request.customer.CustomerCreateRequest;
+import com.sapo.mock.clothing.crm.dto.request.customer.CustomerUpdateRequest;
 import com.sapo.mock.clothing.crm.dto.response.CustomerResponse;
 import com.sapo.mock.clothing.crm.service.CustomerService;
 import jakarta.validation.Valid;
@@ -124,6 +124,24 @@ public class CustomerController {
         response.setStatusCode(HttpStatus.OK.value()); // Mã 200 OK thành công
         response.setError(null);
         response.setMessage("Khóa tài khoản khách hàng thành công");
+        response.setData(null);
+
+        return ResponseEntity.ok(response);
+    }
+    /**
+     * API Mở khóa tài khoản khách hàng (Kích hoạt lại)
+     * Endpoint: PATCH /api/v1/crm/customers/11/activate
+     */
+    @PatchMapping("/{id}/activate")
+    public ResponseEntity<RestResponse<Void>> activateCustomer(@PathVariable Integer id) {
+
+        // Gọi tầng service xử lý chuyển trạng thái sang ACTIVE
+        customerService.activateCustomer(id);
+
+        RestResponse<Void> response = new RestResponse<>();
+        response.setStatusCode(HttpStatus.OK.value());
+        response.setError(null);
+        response.setMessage("Kích hoạt lại tài khoản khách hàng thành công");
         response.setData(null);
 
         return ResponseEntity.ok(response);

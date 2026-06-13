@@ -24,4 +24,8 @@ public interface CustomerRepository extends JpaRepository<Customer, Integer> {
 
     // Check if the phone number is used by another customer (excluding the current ID).
     boolean existsByPhoneAndIdNot(String phone, Integer id);
+
+    // detail customer by id, only if ACTIVE
+    @Query("SELECT c FROM Customer c WHERE c.customerGroup.id = :groupId AND c.status = com.sapo.mock.clothing.util.constant.CustomerStatusEnum.ACTIVE")
+    Page<Customer> findCustomersByGroupId(@Param("groupId") Integer groupId, Pageable pageable);
 }

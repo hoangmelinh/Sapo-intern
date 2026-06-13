@@ -1,13 +1,13 @@
-package com.sapo.mock.clothing.crm.service;
+package com.sapo.mock.clothing.crm.service.impl;
 
 
-import com.sapo.mock.clothing.crm.dto.request.CustomerCreateRequest;
-import com.sapo.mock.clothing.crm.dto.request.CustomerUpdateRequest;
+import com.sapo.mock.clothing.crm.dto.request.customer.CustomerCreateRequest;
+import com.sapo.mock.clothing.crm.dto.request.customer.CustomerUpdateRequest;
 import com.sapo.mock.clothing.crm.dto.response.CustomerResponse;
 import com.sapo.mock.clothing.crm.repository.CustomerRepository;
+import com.sapo.mock.clothing.crm.service.CustomerService;
 import com.sapo.mock.clothing.entity.Customer;
 import com.sapo.mock.clothing.util.constant.CustomerStatusEnum;
-import com.sapo.mock.clothing.util.constant.GenderEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -97,6 +97,7 @@ public class CustomerServiceImpl implements CustomerService {
         return convertToResponse(updatedCustomer);
     }
 
+    // Soft delete a customer.
     @Override
     @Transactional
     public void deactivateCustomer(Integer id) {
@@ -106,6 +107,29 @@ public class CustomerServiceImpl implements CustomerService {
         customer.setStatus(CustomerStatusEnum.INACTIVE);
         // 3. Lưu lại vào DB (Kích hoạt @PreUpdate cập nhật thời gian chỉnh sửa)
         customerRepository.save(customer);
+    }
+
+    // Unlock client
+    @Override
+    @Transactional
+    public void activateCustomer(Integer id) {
+        // 1. Tìm khách hàng (Kể cả đang INACTIVE vẫn phải tìm ra để mở khóa)
+        Customer customer = customerRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với ID: " + id));
+
+        // 2. Chuyển trạng thái hoạt động trở lại thành ACTIVE
+        customer.setStatus(CustomerStatusEnum.ACTIVE);
+
+        // 3. Lưu lại vào DB (Tự động kích hoạt @PreUpdate lưu thời gian mở khóa)
+        customerRepository.save(customer);
+    }
+
+    // Get customers by group ID, only ACTIVE ones.
+    @Override
+    public Page<CustomerResponse> getCustomersByGroupId(Integer groupId, Pageable pageable) {
+        Page<Customer> customers = customerRepository.findCustomersByGroupId(groupId, pageable);
+
+        return customers.map(this::convertToResponse);
     }
 }
 
