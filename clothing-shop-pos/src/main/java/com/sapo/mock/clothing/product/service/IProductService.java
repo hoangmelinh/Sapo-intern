@@ -15,4 +15,8 @@ public interface IProductService {
 
 	ProductResponse updateProduct(Integer id, ProductRequest request);
 
+	ProductResponse deleteProduct(Integer id);
+
+	void hardDeleteProduct(Integer id);
+
 }

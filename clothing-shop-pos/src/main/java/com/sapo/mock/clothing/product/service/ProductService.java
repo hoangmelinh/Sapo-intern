@@ -189,4 +189,28 @@ public class ProductService implements IProductService {
 		Product updatedProduct = productRepository.save(product);
 		return toProductResponse(updatedProduct);
 	}
+
+	@Override
+	public ProductResponse deleteProduct(Integer id) {
+		Product productDeleting = productRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("không tìm thấy sản phẩm"));
+		if (Boolean.TRUE.equals(productDeleting.getIsDeleted())) {
+			throw new RuntimeException("Sản phẩm đã bị xóa trước đó");
+		}
+		productDeleting.setIsDeleted(true);
+		productRepository.save(productDeleting);
+		return toProductResponse(productDeleting);
+
+	}
+
+	@Override
+	public void hardDeleteProduct(Integer id) {
+		Product productDeleting = productRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("không tìm thấy sản phẩm"));
+		if (!Boolean.TRUE.equals(productDeleting.getIsDeleted())) {
+			throw new RuntimeException("Sản phẩm vẫn đang hoạt động");
+		}
+		productRepository.deleteById(id);
+
+	}
 }
