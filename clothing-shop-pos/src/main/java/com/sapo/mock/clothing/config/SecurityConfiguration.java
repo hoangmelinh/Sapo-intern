@@ -39,7 +39,8 @@ public class SecurityConfiguration {
         "/swagger-resources/**",
         "/webjars/**",
         "/actuator/**",
-        "/storage/**"
+        "/storage/**",
+        "api/v1/products"
     };
 
     @Bean
