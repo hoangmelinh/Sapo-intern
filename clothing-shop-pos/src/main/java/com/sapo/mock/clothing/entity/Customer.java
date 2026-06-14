@@ -1,5 +1,7 @@
 package com.sapo.mock.clothing.entity;
 
+import com.sapo.mock.clothing.util.constant.CustomerStatusEnum;
+import com.sapo.mock.clothing.util.constant.GenderEnum;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,8 +30,11 @@ public class Customer {
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
+    /*@Column(length = 20)
+    private String gender;*/
+    @Enumerated(EnumType.STRING)
     @Column(length = 20)
-    private String gender;
+    private GenderEnum gender;
 
     @Column(columnDefinition = "TEXT")
     private String address;
@@ -37,8 +42,16 @@ public class Customer {
     @Column(columnDefinition = "TEXT")
     private String note;
 
-    @Column(length = 20)
-    private String status = "ACTIVE";
+    /* @Column(length = 20)
+     private String status = "ACTIVE";*/
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private CustomerStatusEnum status = CustomerStatusEnum.ACTIVE;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_id") // Tạo cột group_id làm khóa ngoại dưới DB
+    private CustomerGroup customerGroup;
+
 
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
