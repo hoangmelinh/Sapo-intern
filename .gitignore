@@ -1,0 +1,6 @@
+# Ignore IDE files at the root level
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
