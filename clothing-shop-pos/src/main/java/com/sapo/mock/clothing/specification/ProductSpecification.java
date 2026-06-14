@@ -10,13 +10,9 @@ import com.sapo.mock.clothing.entity.Product;
 import jakarta.persistence.criteria.Predicate;
 
 public class ProductSpecification {
-	public static Specification<Product> build(String search, String productName, String sku, String category) {
-//		nếu viến hẳn ra nó sẽ thế này
-//		return (Root<Products> root,
-//		        CriteriaQuery<?> query,
-//		        CriteriaBuilder cb) ->
+	public static Specification<Product> build(String search, String productName, String sku, String category,
+			Boolean isDeleted) {
 
-//		đây là kiểu biết ngắn gọn
 		return (root, query, cb) -> {
 			List<Predicate> predicates = new ArrayList<>();
 			if (search != null && !search.trim().isEmpty()) {
@@ -28,7 +24,7 @@ public class ProductSpecification {
 				predicates.add(cb.or(nameLike, skuLike));
 
 			}
-//			filter theo tên product
+
 			if (productName != null && !productName.isBlank()) {
 				predicates.add(cb.like(cb.lower(root.get("name")), "%" + productName.toLowerCase().trim() + "%"));
 
@@ -36,6 +32,9 @@ public class ProductSpecification {
 
 			if (sku != null && !sku.isBlank()) {
 				predicates.add(cb.like(cb.lower(root.get("sku")), "%" + sku.toLowerCase().trim() + "%"));
+			}
+			if (isDeleted != null) {
+				predicates.add(cb.equal(root.get("isDeleted"), isDeleted));
 			}
 
 			return cb.and(predicates.toArray(new Predicate[0]));

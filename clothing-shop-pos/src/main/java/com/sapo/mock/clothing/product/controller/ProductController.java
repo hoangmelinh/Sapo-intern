@@ -39,10 +39,21 @@ public class ProductController {
 	@GetMapping()
 	public ResponseEntity<RestResponse<Page<ProductResponse>>> getAllProducts(Pageable pageable,
 			@RequestParam(required = false) String search, @RequestParam(required = false) String productName,
-			@RequestParam(required = false) String sku, @RequestParam(required = false) String category) {
-		Page<ProductResponse> products = productService.getAllProducts(pageable, search, productName, sku, category);
+			@RequestParam(required = false) String sku, @RequestParam(required = false) String category,
+			@RequestParam(required = false) Boolean isDeleted) {
+		Page<ProductResponse> products = productService.getAllProducts(pageable, search, productName, sku, category,
+				isDeleted);
 		RestResponse<Page<ProductResponse>> response = new RestResponse<>(200, null,
 				"Lấy danh sách sản phẩm thành công", products);
+		return ResponseEntity.ok(response);
+
+	}
+
+	@GetMapping("/{id}")
+	public ResponseEntity<RestResponse<ProductResponse>> getProductByID(@PathVariable Integer id) {
+		ProductResponse products = productService.getProductByID(id);
+		RestResponse<ProductResponse> response = new RestResponse<>(200, null, "Lấy danh sách sản phẩm thành công",
+				products);
 		return ResponseEntity.ok(response);
 
 	}

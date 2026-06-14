@@ -9,7 +9,7 @@ import com.sapo.mock.clothing.product.DTO.ProductResponse;
 public interface IProductService {
 
 	Page<ProductResponse> getAllProducts(Pageable pageable, String search, String productName, String sku,
-			String category);
+			String category, Boolean isDeleted);
 
 	ProductResponse creatProduct(ProductRequest request, String username);
 
@@ -18,5 +18,7 @@ public interface IProductService {
 	ProductResponse deleteProduct(Integer id);
 
 	void hardDeleteProduct(Integer id);
+
+	ProductResponse getProductByID(Integer id);
 
 }

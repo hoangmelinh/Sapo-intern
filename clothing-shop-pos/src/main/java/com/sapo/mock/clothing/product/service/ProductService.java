@@ -16,6 +16,8 @@ import com.sapo.mock.clothing.entity.Product;
 import com.sapo.mock.clothing.entity.ProductAttribute;
 import com.sapo.mock.clothing.entity.Warehouse;
 import com.sapo.mock.clothing.entity.WarehouseStock;
+import com.sapo.mock.clothing.exception.BadRequestException;
+import com.sapo.mock.clothing.exception.ResourceNotFoundException;
 import com.sapo.mock.clothing.product.DTO.ProductAttributeRequest;
 import com.sapo.mock.clothing.product.DTO.ProductAttributeResponse;
 import com.sapo.mock.clothing.product.DTO.ProductRequest;
@@ -112,9 +114,16 @@ public class ProductService implements IProductService {
 
 	@Override
 	public Page<ProductResponse> getAllProducts(Pageable pageable, String search, String productName, String sku,
-			String category) {
-		Specification<Product> spe = ProductSpecification.build(search, productName, sku, category);
+			String category, Boolean isDeleted) {
+		Specification<Product> spe = ProductSpecification.build(search, productName, sku, category, isDeleted);
 		return productRepository.findAll(spe, pageable).map(this::toProductResponse);
+	}
+
+	@Override
+	public ProductResponse getProductByID(Integer id) {
+		Product product = productRepository.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException(" sản phẩm không tồn tại"));
+		return toProductResponse(product);
 	}
 
 	@Override
@@ -193,7 +202,7 @@ public class ProductService implements IProductService {
 	@Override
 	public ProductResponse deleteProduct(Integer id) {
 		Product productDeleting = productRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("không tìm thấy sản phẩm"));
+				.orElseThrow(() -> new ResourceNotFoundException("không tìm thấy sản phẩm"));
 		if (Boolean.TRUE.equals(productDeleting.getIsDeleted())) {
 			throw new RuntimeException("Sản phẩm đã bị xóa trước đó");
 		}
@@ -206,11 +215,12 @@ public class ProductService implements IProductService {
 	@Override
 	public void hardDeleteProduct(Integer id) {
 		Product productDeleting = productRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("không tìm thấy sản phẩm"));
+				.orElseThrow(() -> new ResourceNotFoundException("không tìm thấy sản phẩm"));
 		if (!Boolean.TRUE.equals(productDeleting.getIsDeleted())) {
-			throw new RuntimeException("Sản phẩm vẫn đang hoạt động");
+			throw new BadRequestException("Sản phẩm vẫn đang hoạt động");
 		}
 		productRepository.deleteById(id);
 
 	}
+
 }
