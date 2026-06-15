@@ -18,7 +18,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "warehouse_stock", uniqueConstraints = @UniqueConstraint(columnNames = { "product_id", "warehouse_id" }))
+@Table(name = "warehouse_stock", uniqueConstraints = @UniqueConstraint(columnNames = { "variant_id", "warehouse_id" }))
 public class WarehouseStock {
 
 	@Id

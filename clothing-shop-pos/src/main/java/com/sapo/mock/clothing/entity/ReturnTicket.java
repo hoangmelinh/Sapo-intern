@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import com.sapo.mock.clothing.util.constant.ReturnTicketStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -42,8 +43,9 @@ public class ReturnTicket {
     @JoinColumn(name = "reason_code_id")
     private ReturnReasonCode reasonCode;
 
-    @Column(length = 20)
-    private String status = "PENDING";
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private ReturnTicketStatus status = ReturnTicketStatus.PENDING;
 
     @Column(columnDefinition = "TEXT")
     private String note;
