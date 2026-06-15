@@ -30,9 +30,8 @@ public class InvoiceItem {
 	@JoinColumn(name = "invoice_id", nullable = false)
 	private Invoice invoice;
 
-	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "variant_id", nullable = false)
-	private ProductVariant variant;
+	@Column(name = "variant_id", nullable = false)
+	private Integer variantId;
 
 	@Column(name = "product_name", nullable = false, length = 200)
 	private String productName;
