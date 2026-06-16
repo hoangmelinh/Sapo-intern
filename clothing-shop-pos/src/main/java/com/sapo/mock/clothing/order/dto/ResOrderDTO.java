@@ -1,6 +1,6 @@
 package com.sapo.mock.clothing.order.dto;
 
-import com.sapo.mock.clothing.util.constant.InvoiceStatus;
+import com.sapo.mock.clothing.util.constant.OrderStatus;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,8 +20,6 @@ public class ResOrderDTO {
     private Integer customerId;
     private String customerName;
 
-    private Integer warehouseId;
-    private String warehouseName;
 
     private Integer createdById;
     private String createdByUsername;
@@ -30,7 +28,7 @@ public class ResOrderDTO {
     private BigDecimal paidAmount;
     private BigDecimal changeAmount;
 
-    private InvoiceStatus status;
+    private OrderStatus status;
     private boolean isPrinted;
     private String note;
 
@@ -44,7 +42,7 @@ public class ResOrderDTO {
     @Builder
     public static class ResOrderItemDTO {
         private Integer id;
-        private Integer productId;
+        private Integer variantId;
         private String productName;
         private String productSku;
         private int quantity;

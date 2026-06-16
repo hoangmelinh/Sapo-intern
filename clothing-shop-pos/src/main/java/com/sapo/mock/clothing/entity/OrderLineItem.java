@@ -27,8 +27,8 @@ public class OrderLineItem {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-    @Column(name = "product_id", nullable = false)
-    private Integer productId;
+    @Column(name = "variant_id", nullable = false)
+    private Integer variantId;
 
     @Column(name = "product_name", nullable = false, length = 200)
     private String productName;

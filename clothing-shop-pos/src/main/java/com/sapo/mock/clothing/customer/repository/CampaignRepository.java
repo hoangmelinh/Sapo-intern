@@ -18,7 +18,7 @@ public interface CampaignRepository extends JpaRepository<Customer, Integer> {
      */
     @Query("SELECT DISTINCT c FROM Customer c " +
             "JOIN Order o ON c.id = o.customerId " +
-            "WHERE o.status = com.sapo.mock.clothing.util.constant.InvoiceStatus.COMPLETED " +
+            "WHERE o.status = com.sapo.mock.clothing.util.constant.OrderStatus.COMPLETED " +
             "AND o.createdAt >= :startTime AND o.createdAt <= :endTime " +
             "AND c.status = com.sapo.mock.clothing.util.constant.CustomerStatusEnum.ACTIVE")
     Page<Customer> findCustomersAfter7DaysBuy(
@@ -36,7 +36,7 @@ public interface CampaignRepository extends JpaRepository<Customer, Integer> {
             "WHERE c.status = com.sapo.mock.clothing.util.constant.CustomerStatusEnum.ACTIVE " +
             "AND c.id NOT IN (" +
             "    SELECT DISTINCT o.customerId FROM Order o " +
-            "    WHERE o.status = com.sapo.mock.clothing.util.constant.InvoiceStatus.COMPLETED " +
+            "    WHERE o.status = com.sapo.mock.clothing.util.constant.OrderStatus.COMPLETED " +
             "    AND o.createdAt >= :thirtyDaysAgo" +
             ")")
     Page<Customer> findCustomersLongTimeNoBuy(

@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
-import com.sapo.mock.clothing.util.constant.InvoiceStatus;
+import com.sapo.mock.clothing.util.constant.OrderStatus;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -40,8 +40,6 @@ public class Order {
 	@Column(name = "customer_id", nullable = false)
 	private Integer customerId;
 
-	@Column(name = "warehouse_id", nullable = false)
-	private Integer warehouseId;
 
 	@Column(name = "created_by", nullable = false)
 	private Integer createdBy;
@@ -49,8 +47,6 @@ public class Order {
 	@Column(name = "customer_name", length = 100)
 	private String customerName;
 
-	@Column(name = "warehouse_name", length = 150)
-	private String warehouseName;
 
 	@Column(name = "created_by_username", length = 50)
 	private String createdByUsername;
@@ -66,7 +62,7 @@ public class Order {
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
-	private InvoiceStatus status = InvoiceStatus.COMPLETED;
+	private OrderStatus status = OrderStatus.COMPLETED;
 
 	@Column(name = "is_printed", nullable = false)
 	private boolean isPrinted = false;
