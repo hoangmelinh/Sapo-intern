@@ -7,12 +7,10 @@ import com.sapo.mock.clothing.order.dto.ReqCreateOrderDTO;
 import com.sapo.mock.clothing.order.dto.ResOrderDTO;
 import com.sapo.mock.clothing.order.repository.OrderLineItemRepository;
 import com.sapo.mock.clothing.order.repository.OrderRepository;
-import com.sapo.mock.clothing.product.repository.ProductRepository;
+import com.sapo.mock.clothing.product.repository.ProductVariantRepository;
 import com.sapo.mock.clothing.user.repository.UserRepository;
-import com.sapo.mock.clothing.util.constant.InvoiceStatus;
+import com.sapo.mock.clothing.util.constant.OrderStatus;
 import com.sapo.mock.clothing.customer.repository.CustomerRepository;
-import com.sapo.mock.clothing.warehouse.repository.warehouseRepository;
-import com.sapo.mock.clothing.warehouse.repository.warehouseStockRepository;
 import com.sapo.mock.clothing.common.dto.response.ResultPaginationDTO;
 
 import lombok.RequiredArgsConstructor;
@@ -37,65 +35,63 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final OrderLineItemRepository orderLineItemRepository;
-    private final ProductRepository productRepository;
+    private final ProductVariantRepository productVariantRepository;
     private final UserRepository userRepository;
-    private final warehouseRepository warehouseRepository;
-    private final warehouseStockRepository warehouseStockRepository;
     private final CustomerRepository customerRepository;
 
     @Transactional
     public ResOrderDTO createOrder(ReqCreateOrderDTO dto, String username) {
 
-        // Tìm các entity liên quan từ DB
         User createdBy = userRepository.findByUsername(username);
         if (createdBy == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng: " + username);
         }
 
-        Warehouse warehouse = warehouseRepository.findById(dto.getWarehouseId())
-                .orElseThrow(() -> new ResourceNotFoundException("Kho ID " + dto.getWarehouseId() + " không tồn tại"));
-
         Customer customer = customerRepository.findById(dto.getCustomerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Khách hàng ID " + dto.getCustomerId() + " không tồn tại"));
 
-        // Tạo đối tượng Order mới
         Order order = new Order();
         order.setCustomerId(customer.getId());
         order.setCustomerName(customer.getFullName());
-        order.setWarehouseId(warehouse.getId());
-        order.setWarehouseName(warehouse.getName());
         order.setCreatedBy(createdBy.getId());
         order.setCreatedByUsername(createdBy.getUsername());
         order.setNote(dto.getNote());
         order.setPaidAmount(dto.getPaidAmount());
-        order.setStatus(InvoiceStatus.COMPLETED);
+        order.setStatus(OrderStatus.COMPLETED);
         order.setPrinted(false);
 
-        // Tự động sinh mã đơn hàng dạng HD-YYYYMMDD-NNN
         String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         Instant startOfDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
         long countToday = orderRepository.countByCreatedAtAfter(startOfDay);
         String orderNumber = "HD-" + dateStr + "-" + String.format("%03d", countToday + 1);
         order.setOrderNumber(orderNumber);
 
-        // Duyệt danh sách sản phẩm, tính tổng tiền và tạo OrderLineItem (Snapshot)
         BigDecimal totalAmount = BigDecimal.ZERO;
         List<OrderLineItem> lineItems = new ArrayList<>();
 
         for (ReqCreateOrderDTO.OrderItemDTO itemDto : dto.getItems()) {
-            Product product = productRepository.findById(itemDto.getVariantId())
+            ProductVariant variant = productVariantRepository.findById(itemDto.getVariantId())
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Sản phẩm ID " + itemDto.getVariantId() + " không tồn tại"));
 
-            BigDecimal unitPrice = product.getSalePrice();
+            BigDecimal unitPrice = variant.getSalePrice();
             BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(itemDto.getQuantity()));
             totalAmount = totalAmount.add(subtotal);
 
-            // Snapshot thông tin sản phẩm tại thời điểm bán
             OrderLineItem lineItem = new OrderLineItem();
-            lineItem.setProductId(product.getId());
-            lineItem.setProductName(product.getName());
-            lineItem.setProductSku(product.getSku());
+            lineItem.setVariantId(variant.getId());
+            
+            // Build full product name with options
+            String fullName = variant.getProduct().getName();
+            List<String> options = new ArrayList<>();
+            if (variant.getOption1Value() != null) options.add(variant.getOption1Value().getValue());
+            if (variant.getOption2Value() != null) options.add(variant.getOption2Value().getValue());
+            if (variant.getOption3Value() != null) options.add(variant.getOption3Value().getValue());
+            if (!options.isEmpty()) {
+                fullName += " (" + String.join(" - ", options) + ")";
+            }
+            lineItem.setProductName(fullName);
+            lineItem.setProductSku(variant.getSku());
             lineItem.setQuantity(itemDto.getQuantity());
             lineItem.setUnitPrice(unitPrice);
             lineItem.setSubtotal(subtotal);
@@ -104,20 +100,16 @@ public class OrderService {
             lineItems.add(lineItem);
         }
 
-        // Kiểm tra số tiền khách đưa có đủ không
         if (dto.getPaidAmount().compareTo(totalAmount) < 0) {
             throw new BadRequestException(
                     "Số tiền khách đưa (" + dto.getPaidAmount() + ") không đủ để thanh toán đơn hàng (" + totalAmount + ")");
         }
 
-        // Gán tổng tiền và tiền thừa trả lại khách
         order.setTotalAmount(totalAmount);
         order.setChangeAmount(dto.getPaidAmount().subtract(totalAmount));
 
-        // Kiểm tra và trừ kho trước khi chốt đơn
-        this.deductWarehouseStock(dto.getItems(), warehouse.getId());
+        this.deductProductStock(dto.getItems());
 
-        // Lưu đơn hàng cha trước (để có ID), sau đó lưu các dòng chi tiết
         Order savedOrder = orderRepository.save(order);
         orderLineItemRepository.saveAll(lineItems);
 
@@ -148,7 +140,6 @@ public class OrderService {
                 .map(Order::getId)
                 .toList();
 
-        // Tối ưu N+1: batch fetch toàn bộ line items của tất cả đơn hàng trong trang
         List<OrderLineItem> allItems = orderIds.isEmpty() ? new ArrayList<>()
                 : orderLineItemRepository.findByOrderIdIn(orderIds);
 
@@ -171,36 +162,26 @@ public class OrderService {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Đơn hàng ID " + id + " không tồn tại"));
 
-        if (order.getStatus() == InvoiceStatus.CANCELLED) {
+        if (order.getStatus() == OrderStatus.CANCELLED) {
             throw new BadRequestException("Đơn hàng này đã bị hủy trước đó");
         }
 
-        // Cập nhật trạng thái
-        order.setStatus(InvoiceStatus.CANCELLED);
+        order.setStatus(OrderStatus.CANCELLED);
         Order savedOrder = orderRepository.save(order);
 
-        // Hoàn trả tồn kho
         List<OrderLineItem> items = orderLineItemRepository.findByOrderId(id);
         for (OrderLineItem item : items) {
-            WarehouseStock stock = warehouseStockRepository
-                    .findByProductIdAndWarehouseId(item.getProductId(), order.getWarehouseId())
+            ProductVariant variant = productVariantRepository.findById(item.getVariantId())
                     .orElseThrow(() -> new ResourceNotFoundException(
-                            "Không tìm thấy thông tin tồn kho của sản phẩm ID " + item.getProductId()
-                                    + " trong kho " + order.getWarehouseId()));
+                            "Không tìm thấy thông tin tồn kho của sản phẩm ID " + item.getVariantId()));
 
-            stock.setQuantity(stock.getQuantity() + item.getQuantity());
-            warehouseStockRepository.save(stock);
+            variant.setQuantity(variant.getQuantity() + item.getQuantity());
+            productVariantRepository.save(variant);
         }
 
         return mapToResOrderDTO(savedOrder, items);
     }
 
-    /**
-     * Đánh dấu trạng thái in hóa đơn nhiệt cho đơn hàng.
-     *
-     * @param id     ID đơn hàng
-     * @param status true = đã in, false = chưa in
-     */
     @Transactional
     public ResOrderDTO updatePrintStatus(Integer id, boolean status) {
         Order order = orderRepository.findById(id)
@@ -213,13 +194,11 @@ public class OrderService {
         return mapToResOrderDTO(savedOrder, items);
     }
 
-    // ─── Private helpers ─────────────────────────────────────────────────────
-
     private ResOrderDTO mapToResOrderDTO(Order savedOrder, List<OrderLineItem> lineItems) {
         List<ResOrderDTO.ResOrderItemDTO> resItems = lineItems.stream()
                 .map(i -> ResOrderDTO.ResOrderItemDTO.builder()
                         .id(i.getId())
-                        .productId(i.getProductId())
+                        .variantId(i.getVariantId())
                         .productName(i.getProductName())
                         .productSku(i.getProductSku())
                         .quantity(i.getQuantity())
@@ -233,8 +212,6 @@ public class OrderService {
                 .orderNumber(savedOrder.getOrderNumber())
                 .customerId(savedOrder.getCustomerId())
                 .customerName(savedOrder.getCustomerName())
-                .warehouseId(savedOrder.getWarehouseId())
-                .warehouseName(savedOrder.getWarehouseName())
                 .createdById(savedOrder.getCreatedBy())
                 .createdByUsername(savedOrder.getCreatedByUsername())
                 .totalAmount(savedOrder.getTotalAmount())
@@ -249,22 +226,19 @@ public class OrderService {
                 .build();
     }
 
-    private void deductWarehouseStock(List<ReqCreateOrderDTO.OrderItemDTO> items, Integer warehouseId) {
+    private void deductProductStock(List<ReqCreateOrderDTO.OrderItemDTO> items) {
         for (ReqCreateOrderDTO.OrderItemDTO itemDto : items) {
-            WarehouseStock stock = warehouseStockRepository
-                    .findByProductIdAndWarehouseId(itemDto.getVariantId(), warehouseId)
+            ProductVariant variant = productVariantRepository.findById(itemDto.getVariantId())
                     .orElseThrow(() -> new ResourceNotFoundException(
-                            "Không tìm thấy thông tin tồn kho của sản phẩm ID " + itemDto.getVariantId()
-                                    + " trong kho " + warehouseId));
+                            "Không tìm thấy sản phẩm ID " + itemDto.getVariantId()));
 
-            if (stock.getQuantity() < itemDto.getQuantity()) {
+            if (variant.getQuantity() < itemDto.getQuantity()) {
                 throw new BadRequestException("Sản phẩm ID " + itemDto.getVariantId()
-                        + " không đủ số lượng trong kho (Hiện có: " + stock.getQuantity() + ")");
+                        + " không đủ số lượng (Hiện có: " + variant.getQuantity() + ")");
             }
 
-            // Thực hiện trừ kho vật lý
-            stock.setQuantity(stock.getQuantity() - itemDto.getQuantity());
-            warehouseStockRepository.save(stock);
+            variant.setQuantity(variant.getQuantity() - itemDto.getQuantity());
+            productVariantRepository.save(variant);
         }
     }
 }

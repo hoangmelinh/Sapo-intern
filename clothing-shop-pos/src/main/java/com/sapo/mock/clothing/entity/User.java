@@ -85,4 +85,9 @@ public class User implements UserDetails {
 	public String getPassword() {
 		return this.passwordHash;
 	}
+
+	@Override
+	public boolean isEnabled() {
+		return this.active;
+	}
 }

@@ -1,11 +1,15 @@
 package com.sapo.mock.clothing.entity;
 
+
 import jakarta.persistence.*;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+
 import java.math.BigDecimal;
+
 
 @Getter
 @Setter
@@ -13,6 +17,7 @@ import java.math.BigDecimal;
 @Entity
 @Table(name = "order_line_item")
 public class OrderLineItem {
+
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,8 +27,8 @@ public class OrderLineItem {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-    @Column(name = "product_id", nullable = false)
-    private Integer productId;
+    @Column(name = "variant_id", nullable = false)
+    private Integer variantId;
 
     @Column(name = "product_name", nullable = false, length = 200)
     private String productName;
@@ -40,3 +45,4 @@ public class OrderLineItem {
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal subtotal;
 }
+

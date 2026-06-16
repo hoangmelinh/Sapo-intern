@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,7 +18,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @Entity
-
+@Table(name = "product_attribute")
 @EqualsAndHashCode(of = "attrKey")
 public class ProductAttribute {
 
@@ -25,7 +26,7 @@ public class ProductAttribute {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
 
-	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "product_id", nullable = false)
 	private Product product;
 
@@ -34,5 +35,4 @@ public class ProductAttribute {
 
 	@Column(name = "attr_value", nullable = false, columnDefinition = "TEXT")
 	private String attrValue;
-
 }

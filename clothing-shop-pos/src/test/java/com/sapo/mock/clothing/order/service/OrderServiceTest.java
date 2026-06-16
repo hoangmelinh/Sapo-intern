@@ -7,11 +7,10 @@ import com.sapo.mock.clothing.order.dto.ReqCreateOrderDTO;
 import com.sapo.mock.clothing.order.dto.ResOrderDTO;
 import com.sapo.mock.clothing.order.repository.OrderLineItemRepository;
 import com.sapo.mock.clothing.order.repository.OrderRepository;
-import com.sapo.mock.clothing.product.repository.ProductRepository;
+import com.sapo.mock.clothing.product.repository.ProductVariantRepository;
 import com.sapo.mock.clothing.user.repository.UserRepository;
 import com.sapo.mock.clothing.customer.repository.CustomerRepository;
-import com.sapo.mock.clothing.warehouse.repository.warehouseRepository;
-import com.sapo.mock.clothing.util.constant.InvoiceStatus;
+import com.sapo.mock.clothing.util.constant.OrderStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,7 +30,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import com.sapo.mock.clothing.common.dto.response.ResultPaginationDTO;
-import com.sapo.mock.clothing.warehouse.repository.warehouseStockRepository;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -45,13 +43,9 @@ public class OrderServiceTest {
     @Mock
     private OrderLineItemRepository orderLineItemRepository;
     @Mock
-    private ProductRepository productRepository;
+    private ProductVariantRepository productVariantRepository;
     @Mock
     private UserRepository userRepository;
-    @Mock
-    private warehouseRepository warehouseRepository;
-    @Mock
-    private warehouseStockRepository warehouseStockRepository;
     @Mock
     private CustomerRepository customerRepository;
 
@@ -59,9 +53,9 @@ public class OrderServiceTest {
     private OrderService orderService;
 
     private User mockUser;
-    private Warehouse mockWarehouse;
     private Customer mockCustomer;
     private Product mockProduct;
+    private ProductVariant mockVariant;
     private ReqCreateOrderDTO mockReqDto;
 
     @BeforeEach
@@ -70,10 +64,6 @@ public class OrderServiceTest {
         mockUser.setId(1);
         mockUser.setUsername("testuser");
 
-        mockWarehouse = new Warehouse();
-        mockWarehouse.setId(1);
-        mockWarehouse.setName("Kho Trung Tâm");
-
         mockCustomer = new Customer();
         mockCustomer.setId(1);
         mockCustomer.setFullName("Nguyễn Văn A");
@@ -81,17 +71,21 @@ public class OrderServiceTest {
         mockProduct = new Product();
         mockProduct.setId(1);
         mockProduct.setName("Áo thun");
-        mockProduct.setSku("AT-01");
-        mockProduct.setSalePrice(new BigDecimal("100000"));
+
+        mockVariant = new ProductVariant();
+        mockVariant.setId(10);
+        mockVariant.setSku("AT-01-RED-M");
+        mockVariant.setSalePrice(new BigDecimal("100000"));
+        mockVariant.setProduct(mockProduct);
+        mockVariant.setQuantity(50); // initial stock
 
         mockReqDto = new ReqCreateOrderDTO();
         mockReqDto.setCustomerId(1);
-        mockReqDto.setWarehouseId(1);
         mockReqDto.setNote("Test order");
         mockReqDto.setPaidAmount(new BigDecimal("200000"));
 
         ReqCreateOrderDTO.OrderItemDTO itemDto = new ReqCreateOrderDTO.OrderItemDTO();
-        itemDto.setVariantId(1);
+        itemDto.setVariantId(10);
         itemDto.setQuantity(2);
 
         mockReqDto.setItems(Collections.singletonList(itemDto));
@@ -99,46 +93,36 @@ public class OrderServiceTest {
 
     @Test
     void createOrder_Success() {
-        // Arrange
         when(userRepository.findByUsername("testuser")).thenReturn(mockUser);
-        when(warehouseRepository.findById(1)).thenReturn(Optional.of(mockWarehouse));
         when(customerRepository.findById(1)).thenReturn(Optional.of(mockCustomer));
-        when(productRepository.findById(1)).thenReturn(Optional.of(mockProduct));
+        when(productVariantRepository.findById(10)).thenReturn(Optional.of(mockVariant));
 
         when(orderRepository.countByCreatedAtAfter(any())).thenReturn(0L);
-
-        WarehouseStock stock = new WarehouseStock();
-        stock.setId(1);
-        stock.setQuantity(50);
-        when(warehouseStockRepository.findByProductIdAndWarehouseId(1, 1)).thenReturn(Optional.of(stock));
 
         Order savedOrder = new Order();
         savedOrder.setId(100);
         savedOrder.setOrderNumber("HD-20230101-001");
         savedOrder.setCustomerId(1);
         savedOrder.setCustomerName("Nguyễn Văn A");
-        savedOrder.setWarehouseId(1);
-        savedOrder.setWarehouseName("Kho Trung Tâm");
         savedOrder.setCreatedBy(1);
         savedOrder.setCreatedByUsername("testuser");
         savedOrder.setTotalAmount(new BigDecimal("200000"));
         savedOrder.setPaidAmount(new BigDecimal("200000"));
         savedOrder.setChangeAmount(BigDecimal.ZERO);
-        savedOrder.setStatus(InvoiceStatus.COMPLETED);
+        savedOrder.setStatus(OrderStatus.COMPLETED);
         savedOrder.setPrinted(false);
 
         when(orderRepository.save(any(Order.class))).thenReturn(savedOrder);
 
-        // Act
         ResOrderDTO result = orderService.createOrder(mockReqDto, "testuser");
 
-        // Assert
         assertNotNull(result);
         assertEquals(100, result.getId());
         assertEquals("Nguyễn Văn A", result.getCustomerName());
         assertEquals("testuser", result.getCreatedByUsername());
         assertEquals(new BigDecimal("200000"), result.getTotalAmount());
         assertFalse(result.isPrinted());
+        assertEquals(48, mockVariant.getQuantity()); // 50 - 2
 
         verify(orderRepository, times(1)).save(any(Order.class));
         verify(orderLineItemRepository, times(1)).saveAll(anyList());
@@ -155,16 +139,12 @@ public class OrderServiceTest {
 
     @Test
     void createOrder_InsufficientPaidAmount_ThrowsException() {
-        // Arrange
         when(userRepository.findByUsername("testuser")).thenReturn(mockUser);
-        when(warehouseRepository.findById(1)).thenReturn(Optional.of(mockWarehouse));
         when(customerRepository.findById(1)).thenReturn(Optional.of(mockCustomer));
-        when(productRepository.findById(1)).thenReturn(Optional.of(mockProduct));
+        when(productVariantRepository.findById(10)).thenReturn(Optional.of(mockVariant));
 
-        // Khách đưa 50k, nhưng tổng tiền là 200k (100k x 2)
         mockReqDto.setPaidAmount(new BigDecimal("50000"));
 
-        // Act & Assert
         assertThrows(BadRequestException.class, () -> {
             orderService.createOrder(mockReqDto, "testuser");
         });
@@ -172,7 +152,6 @@ public class OrderServiceTest {
 
     @Test
     void getOrderById_Success() {
-        // Arrange
         Order order = new Order();
         order.setId(100);
         order.setOrderNumber("HD-001");
@@ -181,16 +160,14 @@ public class OrderServiceTest {
 
         OrderLineItem item = new OrderLineItem();
         item.setId(1);
-        item.setProductId(1);
+        item.setVariantId(10);
         item.setQuantity(2);
 
         when(orderRepository.findById(100)).thenReturn(Optional.of(order));
         when(orderLineItemRepository.findByOrderId(100)).thenReturn(Collections.singletonList(item));
 
-        // Act
         ResOrderDTO result = orderService.getOrderById(100);
 
-        // Assert
         assertNotNull(result);
         assertEquals(100, result.getId());
         assertEquals(1, result.getItems().size());
@@ -209,7 +186,6 @@ public class OrderServiceTest {
 
     @Test
     void getAllOrders_Success() {
-        // Arrange
         Order order1 = new Order();
         order1.setId(100);
         
@@ -222,10 +198,8 @@ public class OrderServiceTest {
         when(orderRepository.findAll(pageable)).thenReturn(page);
         when(orderLineItemRepository.findByOrderIdIn(anyList())).thenReturn(Collections.emptyList());
 
-        // Act
         ResultPaginationDTO result = orderService.getAllOrders(pageable);
 
-        // Assert
         assertNotNull(result);
         assertEquals(1, result.getMeta().getPage());
         assertEquals(5, result.getMeta().getPageSize());
@@ -237,39 +211,33 @@ public class OrderServiceTest {
 
     @Test
     void cancelOrder_Success() {
-        // Arrange
         Order order = new Order();
         order.setId(100);
-        order.setWarehouseId(1);
-        order.setStatus(InvoiceStatus.COMPLETED);
+        order.setStatus(OrderStatus.COMPLETED);
 
         OrderLineItem item = new OrderLineItem();
-        item.setProductId(1);
+        item.setVariantId(10); // Matches mockVariant.getId()
         item.setQuantity(5);
 
-        WarehouseStock stock = new WarehouseStock();
-        stock.setId(1);
-        stock.setQuantity(10); // current stock
+        mockVariant.setQuantity(10); // current stock
 
         when(orderRepository.findById(100)).thenReturn(Optional.of(order));
         when(orderRepository.save(any(Order.class))).thenReturn(order);
         when(orderLineItemRepository.findByOrderId(100)).thenReturn(Collections.singletonList(item));
-        when(warehouseStockRepository.findByProductIdAndWarehouseId(1, 1)).thenReturn(Optional.of(stock));
+        when(productVariantRepository.findById(10)).thenReturn(Optional.of(mockVariant));
 
-        // Act
         ResOrderDTO result = orderService.cancelOrder(100);
 
-        // Assert
-        assertEquals(InvoiceStatus.CANCELLED, order.getStatus());
-        assertEquals(15, stock.getQuantity()); // 10 + 5 returned
-        verify(warehouseStockRepository, times(1)).save(stock);
+        assertEquals(OrderStatus.CANCELLED, order.getStatus());
+        assertEquals(15, mockVariant.getQuantity()); // 10 + 5 returned
+        verify(productVariantRepository, times(1)).save(mockVariant);
     }
 
     @Test
     void cancelOrder_AlreadyCancelled_ThrowsException() {
         Order order = new Order();
         order.setId(100);
-        order.setStatus(InvoiceStatus.CANCELLED);
+        order.setStatus(OrderStatus.CANCELLED);
 
         when(orderRepository.findById(100)).thenReturn(Optional.of(order));
 
@@ -280,7 +248,6 @@ public class OrderServiceTest {
 
     @Test
     void updatePrintStatus_Success() {
-        // Arrange
         Order order = new Order();
         order.setId(100);
         order.setPrinted(false);
@@ -289,10 +256,8 @@ public class OrderServiceTest {
         when(orderRepository.save(any(Order.class))).thenReturn(order);
         when(orderLineItemRepository.findByOrderId(100)).thenReturn(Collections.emptyList());
 
-        // Act
         ResOrderDTO result = orderService.updatePrintStatus(100, true);
 
-        // Assert
         assertTrue(order.isPrinted());
         assertTrue(result.isPrinted());
         verify(orderRepository, times(1)).save(order);

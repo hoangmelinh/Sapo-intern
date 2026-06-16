@@ -14,8 +14,6 @@ public class ReqCreateOrderDTO {
     @NotNull(message = "Customer ID không được để trống")
     private Integer customerId;
 
-    @NotNull(message = "Warehouse ID không được để trống")
-    private Integer warehouseId;
 
     @NotNull(message = "Số tiền khách trả không được để trống")
     private BigDecimal paidAmount;

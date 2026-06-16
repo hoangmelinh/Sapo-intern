@@ -1,8 +1,8 @@
 
 package com.sapo.mock.clothing.entity;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -16,9 +16,12 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -40,43 +43,31 @@ public class Product {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
 
-	@Column(nullable = false, unique = true, length = 50)
-	private String sku;
-
 	@Column(nullable = false)
 	private String name;
 
-	@Column(length = 100)
-	private String category;
-
-	@Column(length = 50)
-	private String color;
-
-	@Column(length = 20)
-	private String size;
-
-	@Column(name = "sale_price", nullable = false, precision = 15, scale = 2)
-	private BigDecimal salePrice;
-
-	@Column(name = "import_price", precision = 15, scale = 2)
-	private BigDecimal importPrice;
-
 	private String description;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "category_id", nullable = false)
+	private Category category;
 
 	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(name = "image_urls")
 	private List<String> imageUrls;
 
 	@Builder.Default
-	@Column(name = "low_stock_threshold", nullable = false)
-	private Integer lowStockThreshold = 5;
-
-	@Builder.Default
 	@Column(name = "is_deleted", nullable = false)
 	private Boolean isDeleted = false;
 
 	@OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-	private List<ProductAttribute> attributes;
+	private List<ProductOption> options = new ArrayList<>();
+
+	@OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<ProductVariant> variants = new ArrayList<>();
+
+	@OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<ProductAttribute> attributes = new ArrayList<>();
 
 	public void addAttribute(ProductAttribute attr) {
 		attributes.add(attr);
@@ -86,6 +77,17 @@ public class Product {
 	public void removeAttribute(ProductAttribute attr) {
 		attributes.remove(attr);
 		attr.setProduct(null);
+	}
+
+	// THÊM MỚI: Helper method cho Variant
+	public void addVariant(ProductVariant variant) {
+		variants.add(variant);
+		variant.setProduct(this);
+	}
+
+	public void removeVariant(ProductVariant variant) {
+		variants.remove(variant);
+		variant.setProduct(null);
 	}
 
 	@CreationTimestamp
@@ -103,23 +105,4 @@ public class Product {
 	@CreatedBy
 	@Column(name = "created_by")
 	private Integer createdBy;
-
-//	@ManyToOne(fetch = FetchType.LAZY)
-//	@JoinColumn(name = "updated_by")
-//	private User updatedBy;
-//
-//	@ManyToOne(fetch = FetchType.LAZY)
-//	@JoinColumn(name = "created_by")
-//	private User createdBy;
-
-//	@PrePersist
-//	public void prePersist() {
-//		this.createdAt = Instant.now();
-//		this.updatedAt = Instant.now();
-//	}
-//
-//	@PreUpdate
-//	public void preUpdate() {
-//		this.updatedAt = Instant.now();
-//	}
 }
