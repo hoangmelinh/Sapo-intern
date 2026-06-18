@@ -176,4 +176,44 @@ public class CustomerGroupController {
 
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * API: Cập nhật thông tin nhóm khách hàng (Sửa thông tin hoặc Khóa/Mở nhóm)
+     * Endpoint: PUT /api/v1/crm/customer-groups/{id}
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<RestResponse<Void>> updateCustomerGroup(
+            @PathVariable Integer id,
+            @jakarta.validation.Valid @RequestBody CustomerGroupRequest request) {
+
+        groupService.updateCustomerGroup(id, request);
+
+        RestResponse<Void> response = new RestResponse<>(
+                HttpStatus.OK.value(),
+                null,
+                "Cập nhật thông tin nhóm khách hàng thành công",
+                null
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * API: Xóa mềm nhóm khách hàng (Chuyển trạng thái sang INACTIVE)
+     * Endpoint: DELETE /api/v1/crm/customer-groups/{id}
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<RestResponse<Void>> softDeleteCustomerGroup(@PathVariable Integer id) {
+
+        groupService.softDeleteCustomerGroup(id);
+
+        RestResponse<Void> response = new RestResponse<>(
+                HttpStatus.OK.value(),
+                null,
+                "Xóa nhóm khách hàng thành công (Xóa mềm)",
+                null
+        );
+
+        return ResponseEntity.ok(response);
+    }
 }

@@ -7,6 +7,8 @@ import com.sapo.mock.clothing.customer.dto.response.CustomerResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.Instant;
+
 public interface CampaignService {
     // AFTER_7_DAYS
     Page<CustomerResponse> getPendingCustomersAfter7Days(Pageable pageable);
@@ -30,4 +32,11 @@ public interface CampaignService {
 
     // Delete care log
     void deleteCareLog(Integer id);
+
+    // Hàm tìm kiếm lịch sử chăm sóc
+    Page<CareLogListResponse> searchCareLogsByPhone(String phone, String result, Instant fromDate, Instant toDate, Pageable pageable);
+
+    // Hàm lấy chi tiết 1 bản ghi CareLog
+    CareLogResponse getCareLogDetail(Integer id);
+
 }

@@ -10,6 +10,7 @@ import com.sapo.mock.clothing.customer.repository.CustomerRepository;
 import com.sapo.mock.clothing.customer.service.CustomerGroupService;
 import com.sapo.mock.clothing.entity.Customer;
 import com.sapo.mock.clothing.entity.CustomerGroup;
+import com.sapo.mock.clothing.util.constant.CustomerStatusEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,11 +26,14 @@ public class CustomerGroupServiceImpl implements CustomerGroupService {
     @Autowired
     private CustomerRepository customerRepository;
 
+    @Autowired
+    private CustomerGroupRepository customerGroupRepository;
 
-    // Retrieve all customer groups.
+
+    // Retrieve all active customer groups.
     @Override
     public Page<CustomerGroupResponse> getGroupsWithPage(Pageable pageable) {
-        return groupRepository.findAllByOrderByIdAsc(pageable).map(this::convertToResponse);
+        return groupRepository.findByStatusOrderByIdAsc(CustomerStatusEnum.ACTIVE, pageable).map(this::convertToResponse);
     }
 
     private CustomerGroupResponse convertToResponse(CustomerGroup group) {
@@ -153,5 +157,36 @@ public class CustomerGroupServiceImpl implements CustomerGroupService {
         // 3. Lưu và trả về
         Customer updated = customerRepository.save(customer);
         return convertToResponse(updated);
+    }
+
+    @Override
+    @Transactional // Đảm bảo an toàn giao dịch DB
+    public void updateCustomerGroup(Integer id, CustomerGroupRequest request) {
+        // 1. Tìm nhóm khách hàng cũ theo ID, không thấy thì báo lỗi
+        CustomerGroup group = customerGroupRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhóm khách hàng với ID: " + id));
+
+        // 2. Cập nhật đè dữ liệu mới từ Request vào Entity
+        group.setName(request.getName());
+        group.setDescription(request.getDescription());
+        group.setStatus(request.getStatus());
+        group.setNote(request.getNote());
+
+        // 3. Đẩy dữ liệu cập nhật xuống DB (Hàm preUpdate trong Entity sẽ tự kích hoạt)
+        customerGroupRepository.save(group);
+    }
+
+    @Override
+    @Transactional
+    public void softDeleteCustomerGroup(Integer id) {
+        // 1. Tìm nhóm khách hàng cần xóa, không thấy thì bắn lỗi
+        CustomerGroup group = customerGroupRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhóm khách hàng với ID: " + id));
+
+        // 2. Xóa mềm: Chuyển trạng thái sang INACTIVE thay vì xóa hẳn khỏi Database
+        group.setStatus(CustomerStatusEnum.INACTIVE);
+
+        // 3. Lưu lại trạng thái mới xuống DB
+        customerGroupRepository.save(group);
     }
 }

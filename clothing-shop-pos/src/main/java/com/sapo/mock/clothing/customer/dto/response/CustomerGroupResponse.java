@@ -20,5 +20,4 @@ public class CustomerGroupResponse {
     private Long totalCustomers;
     private String note;
     private Instant createdAt;
-
 }

@@ -23,4 +23,8 @@ public interface CustomerGroupService {
 
     // Hàm chỉ gán/đổi/rút nhóm nhanh mà không cần gửi lại toàn bộ thông tin khách hàng
     CustomerResponse assignOnlyGroup(Integer customerId, Integer customerGroupId);
+
+    void updateCustomerGroup(Integer id, CustomerGroupRequest request);
+
+    void softDeleteCustomerGroup(Integer id);
 }

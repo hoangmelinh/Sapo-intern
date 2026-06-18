@@ -15,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+
 @RestController
 @RequestMapping("/api/v1/crm/campaigns")
 @CrossOrigin(origins = "*")
@@ -167,6 +169,53 @@ public class CampaignController {
                 null,
                 "Xóa nhật ký chăm sóc khách hàng thành công",
                 null
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * API: Tìm kiếm và lọc nâng cao lịch sử chăm sóc khách hàng
+     * Endpoint: GET /api/v1/crm/campaigns/care-logs/search
+     */
+    @GetMapping("/care-logs/search")
+    public ResponseEntity<RestResponse<Page<CareLogListResponse>>> searchCareLogsByPhone(
+            @RequestParam(required = false) String phone,
+            @RequestParam(required = false) String result,
+            @RequestParam(required = false) Instant fromDate,
+            @RequestParam(required = false) Instant toDate,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size, org.springframework.data.domain.Sort.by("id").descending());
+
+        Page<CareLogListResponse> searchResult = campaignService.searchCareLogsByPhone(phone, result, fromDate, toDate, pageable);
+
+        RestResponse<Page<CareLogListResponse>> response = new RestResponse<>(
+                HttpStatus.OK.value(),
+                null,
+                "Tìm kiếm lịch sử chăm sóc theo số điện thoại thành công",
+                searchResult
+        );
+        return ResponseEntity.ok(response);
+    }
+
+
+
+    /**
+     * API: Xem CHI TIẾT thông tin một bản ghi lịch sử chăm sóc
+     * Endpoint: GET /api/v1/crm/campaigns/care-logs/{id}
+     */
+    @GetMapping("/care-logs/{id}")
+    public ResponseEntity<RestResponse<CareLogResponse>> getCareLogDetail(@PathVariable Integer id) {
+
+        CareLogResponse result = campaignService.getCareLogDetail(id);
+
+        RestResponse<CareLogResponse> response = new RestResponse<>(
+                HttpStatus.OK.value(),
+                null,
+                "Lấy chi tiết nhật ký chăm sóc thành công",
+                result
         );
 
         return ResponseEntity.ok(response);
