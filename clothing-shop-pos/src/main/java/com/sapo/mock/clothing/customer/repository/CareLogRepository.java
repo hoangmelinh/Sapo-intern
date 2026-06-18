@@ -8,6 +8,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
+import java.util.Optional;
+
 @Repository
 public interface CareLogRepository extends JpaRepository<CareLog, Integer> {
 
@@ -32,4 +35,33 @@ public interface CareLogRepository extends JpaRepository<CareLog, Integer> {
             "LEFT JOIN FETCH cl.order " +
             "WHERE cl.customer.id = :customerId")
     Page<CareLog> findByCustomerId(@Param("customerId") Integer customerId, Pageable pageable);
+
+    /**
+     * API Tìm kiếm nâng cao kết hợp phân trang
+     */
+    @Query("SELECT cl FROM CareLog cl " +
+            "JOIN FETCH cl.customer c " +
+            "JOIN FETCH cl.calledBy u " +
+            "WHERE (:phone IS NULL OR c.phone LIKE CONCAT('%', :phone, '%')) " +
+            "AND (:result IS NULL OR cl.result = :result) " +
+            "AND (:fromDate IS NULL OR cl.calledAt >= :fromDate) " +
+            "AND (:toDate IS NULL OR cl.calledAt <= :toDate)")
+    Page<CareLog> searchCareLogsByPhone(
+            @Param("phone") String phone,
+            @Param("result") String result,
+            @Param("fromDate") Instant fromDate,
+            @Param("toDate") Instant toDate,
+            Pageable pageable
+    );
+
+    /**
+     * Truy vấn chi tiết một bản ghi CareLog kèm toàn bộ mối quan hệ liên quan
+     */
+    @Query("SELECT cl FROM CareLog cl " +
+            "LEFT JOIN FETCH cl.customer " +
+            "LEFT JOIN FETCH cl.campaign " +
+            "LEFT JOIN FETCH cl.calledBy " +
+            "LEFT JOIN FETCH cl.order " +
+            "WHERE cl.id = :id")
+    Optional<CareLog> findDetailById(@Param("id") Integer id);
 }

@@ -13,8 +13,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface CustomerGroupRepository extends JpaRepository<CustomerGroup, Integer> {
 
-    // Retrieve all customer groups.
-    Page<CustomerGroup> findAllByOrderByIdAsc(Pageable pageable);
+    // Retrieve active customer groups.
+    Page<CustomerGroup> findByStatusOrderByIdAsc(com.sapo.mock.clothing.util.constant.CustomerStatusEnum status, Pageable pageable);
 
    /* JPQL ==> totalCustomers là dữ liệu dẫn xuất (derived data) — đã có thể tính được từ dữ liệu có sẵn → không cần lưu riêng,
     tránh rủi ro không đồng bộ.*/

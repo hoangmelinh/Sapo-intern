@@ -1,12 +1,9 @@
 package com.sapo.mock.clothing.customer.service.impl;
 
-
-
 import com.sapo.mock.clothing.customer.dto.request.campaigns.CareLogRequest;
 import com.sapo.mock.clothing.customer.dto.response.CareLogListResponse;
 import com.sapo.mock.clothing.customer.dto.response.CareLogResponse;
 import com.sapo.mock.clothing.customer.dto.response.CustomerResponse;
-
 import com.sapo.mock.clothing.customer.repository.CampaignRepository;
 import com.sapo.mock.clothing.customer.repository.CareLogRepository;
 import com.sapo.mock.clothing.customer.repository.CustomerRepository;
@@ -14,6 +11,8 @@ import com.sapo.mock.clothing.customer.service.CampaignService;
 import com.sapo.mock.clothing.entity.CareLog;
 import com.sapo.mock.clothing.entity.Customer;
 import com.sapo.mock.clothing.entity.User;
+import com.sapo.mock.clothing.entity.CareCampaign; // Đảm bảo import đúng entity nếu có
+import com.sapo.mock.clothing.entity.Order;        // Đảm bảo import đúng entity nếu có
 import com.sapo.mock.clothing.user.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -32,10 +31,8 @@ public class CampaignServiceImpl implements CampaignService {
     private CampaignRepository campaignRepository;
     @Autowired
     private CareLogRepository careLogRepository;
-
     @Autowired
     private CustomerRepository customerRepository;
-
     @Autowired
     private UserRepository userRepository;
 
@@ -49,8 +46,6 @@ public class CampaignServiceImpl implements CampaignService {
         return customers.map(this::convertToResponse);
     }
 
-
-    // LONG_TIME_NO_BUY
     @Override
     public Page<CustomerResponse> getPendingCustomersLongTimeNoBuy(Pageable pageable) {
         LocalDate thirtyDaysAgoDate = LocalDate.now().minusDays(30);
@@ -63,14 +58,83 @@ public class CampaignServiceImpl implements CampaignService {
     @Override
     public Page<CustomerResponse> getPendingCustomersRecallSchedule(Pageable pageable) {
         LocalDate today = LocalDate.now();
-
         Instant startTime = today.atStartOfDay(ZoneId.systemDefault()).toInstant();
         Instant endTime = today.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant();
 
         Page<Customer> customers = campaignRepository.findCustomersRecallSchedule(startTime, endTime, pageable);
-
         return customers.map(this::convertToResponse);
     }
+
+    @Override
+    public Page<CareLogListResponse> getAllCareLogs(Pageable pageable) {
+        Page<CareLog> logs = careLogRepository.findAllCareLogs(pageable);
+        return logs.map(this::convertToCareLogListResponse);
+    }
+
+    @Override
+    public Page<CareLogResponse> getCareLogsByCustomerId(Integer customerId, Pageable pageable) {
+        Page<CareLog> logs = careLogRepository.findByCustomerId(customerId, pageable);
+        return logs.map(this::convertToCareLogResponse);
+    }
+
+    // Hàm xem chi tiết 1 bản ghi CareLog cụ thể theo yêu cầu
+    @Override
+    public CareLogResponse getCareLogDetail(Integer id) {
+        CareLog careLog = careLogRepository.findDetailById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhật ký chăm sóc với ID: " + id));
+        return convertToCareLogResponse(careLog);
+    }
+
+    @Override
+    @Transactional
+    public void saveCareLog(CareLogRequest request, Integer userId) {
+        Customer customer = customerRepository.findById(request.getCustomerId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với ID: " + request.getCustomerId()));
+        User staff = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên hệ thống với ID: " + userId));
+
+        CareLog careLog = new CareLog();
+        careLog.setCustomer(customer);
+        careLog.setCalledBy(staff);
+        careLog.setResult(request.getResult());
+        careLog.setNote(request.getNote());
+        careLog.setNextRetryAt(request.getNextRetryAt());
+        careLog.setCalledAt(Instant.now());
+
+        careLogRepository.save(careLog);
+    }
+
+    @Override
+    @Transactional
+    public void updateCareLog(Integer id, CareLogRequest request) {
+        CareLog careLog = careLogRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhật ký chăm sóc với ID: " + id));
+
+        careLog.setResult(request.getResult());
+        careLog.setNote(request.getNote());
+        careLog.setNextRetryAt(request.getNextRetryAt());
+
+        careLogRepository.save(careLog);
+    }
+
+    @Override
+    @Transactional
+    public void deleteCareLog(Integer id) {
+        CareLog careLog = careLogRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhật ký chăm sóc với ID: " + id));
+        careLogRepository.delete(careLog);
+    }
+
+    @Override
+    public Page<CareLogListResponse> searchCareLogsByPhone(String phone, String result, Instant fromDate, Instant toDate, Pageable pageable) {
+        String searchPhone = (phone != null && !phone.trim().isEmpty()) ? phone.trim() : null;
+        String searchResult = (result != null && !result.trim().isEmpty()) ? result.trim() : null;
+
+        Page<CareLog> logs = careLogRepository.searchCareLogsByPhone(searchPhone, searchResult, fromDate, toDate, pageable);
+        return logs.map(this::convertToCareLogListResponse);
+    }
+
+    // --- MAPPING HELPER METHODS (Đã làm sạch, không trùng lặp) ---
 
     private CustomerResponse convertToResponse(Customer customer) {
         CustomerResponse res = new CustomerResponse();
@@ -93,12 +157,6 @@ public class CampaignServiceImpl implements CampaignService {
         return res;
     }
 
-    @Override
-    public Page<CareLogListResponse> getAllCareLogs(Pageable pageable) {
-        Page<CareLog> logs = careLogRepository.findAllCareLogs(pageable);
-        return logs.map(this::convertToCareLogListResponse);
-    }
-    // --- Hàm Helper mới map sang bản rút gọn ---
     private CareLogListResponse convertToCareLogListResponse(CareLog careLog) {
         CareLogListResponse res = new CareLogListResponse();
         res.setId(careLog.getId());
@@ -123,13 +181,8 @@ public class CampaignServiceImpl implements CampaignService {
         }
         return res;
     }
-    @Override
-    public Page<CareLogResponse> getCareLogsByCustomerId(Integer customerId, Pageable pageable) {
-        Page<CareLog> logs = careLogRepository.findByCustomerId(customerId, pageable);
-        return logs.map(this::convertToCareLogResponse);
-    }
 
-    // Hàm Helper chuyển đổi dữ liệu sang DTO an toàn
+    // Đã giữ lại duy nhất 1 hàm map đầy đủ chuẩn theo DTO mới nhất của bạn
     private CareLogResponse convertToCareLogResponse(CareLog careLog) {
         CareLogResponse res = new CareLogResponse();
         res.setId(careLog.getId());
@@ -140,7 +193,6 @@ public class CampaignServiceImpl implements CampaignService {
         res.setNextRetryAt(careLog.getNextRetryAt());
         res.setCreatedAt(careLog.getCreatedAt());
 
-        // Map khách hàng
         if (careLog.getCustomer() != null) {
             CareLogResponse.CustomerInfo info = new CareLogResponse.CustomerInfo();
             info.setId(careLog.getCustomer().getId());
@@ -149,24 +201,21 @@ public class CampaignServiceImpl implements CampaignService {
             res.setCustomer(info);
         }
 
-        // Map nhân viên gọi điện
+        if (careLog.getCampaign() != null) {
+            CareLogResponse.CampaignInfo info = new CareLogResponse.CampaignInfo();
+            info.setId(careLog.getCampaign().getId());
+            info.setName(careLog.getCampaign().getName());
+            res.setCampaign(info);
+        }
+
         if (careLog.getCalledBy() != null) {
             CareLogResponse.UserInfo info = new CareLogResponse.UserInfo();
             info.setId(careLog.getCalledBy().getId());
             info.setUsername(careLog.getCalledBy().getUsername());
-            info.setFullName(careLog.getCalledBy().getFullName()); // Đảm bảo Entity User có trường này
+            info.setFullName(careLog.getCalledBy().getFullName());
             res.setCalledBy(info);
         }
 
-        // Map chiến dịch nếu có
-        if (careLog.getCampaign() != null) {
-            CareLogResponse.CampaignInfo info = new CareLogResponse.CampaignInfo();
-            info.setId(careLog.getCampaign().getId());
-            info.setName(careLog.getCampaign().getName()); // Đảm bảo Entity CareCampaign có trường name
-            res.setCampaign(info);
-        }
-
-        // Map hóa đơn nếu có
         if (careLog.getOrder() != null) {
             CareLogResponse.OrderInfo info = new CareLogResponse.OrderInfo();
             info.setId(careLog.getOrder().getId());
@@ -176,51 +225,4 @@ public class CampaignServiceImpl implements CampaignService {
 
         return res;
     }
-
-
-    @Override
-    @Transactional // Đảm bảo an toàn giao dịch khi lưu DB
-    public void saveCareLog(CareLogRequest request, Integer userId) {
-        Customer customer = customerRepository.findById(request.getCustomerId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với ID: " + request.getCustomerId()));
-
-        User staff = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên hệ thống với ID: " + userId));
-
-        CareLog careLog = new CareLog();
-        careLog.setCustomer(customer);  // Liên kết đối tượng Customer (Hibernate tự bốc ID lưu vào customer_id)
-        careLog.setCalledBy(staff);     // Liên kết đối tượng User (lưu vào called_by)
-        careLog.setResult(request.getResult());
-        careLog.setNote(request.getNote());
-        careLog.setNextRetryAt(request.getNextRetryAt());
-        careLog.setCalledAt(Instant.now()); // Thời điểm gọi chính là lúc bấm lưu (Bây giờ)
-
-        careLogRepository.save(careLog);
-    }
-
-
-    @Override
-    @Transactional
-    public void updateCareLog(Integer id, CareLogRequest request) {
-        CareLog careLog = careLogRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhật ký chăm sóc với ID: " + id));
-
-        careLog.setResult(request.getResult());
-        careLog.setNote(request.getNote());
-        careLog.setNextRetryAt(request.getNextRetryAt()); // Nếu khách đổi lịch hẹn gọi lại lần nữa
-
-        careLogRepository.save(careLog);
-    }
-
-
-
-    @Override
-    @Transactional
-    public void deleteCareLog(Integer id) {
-        CareLog careLog = careLogRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhật ký chăm sóc với ID: " + id));
-
-        careLogRepository.delete(careLog);
-    }
-
 }
