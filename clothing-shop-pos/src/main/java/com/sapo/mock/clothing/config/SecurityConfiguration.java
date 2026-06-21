@@ -40,12 +40,8 @@ public class SecurityConfiguration {
         "/webjars/**",
         "/actuator/**",
         "/storage/**",
-        "/api/v1/crm/customers/**", // customer
-        "/api/v1/crm/customer-groups/**",// customer group
         "api/v1/products",
         "/storage/**",
-        "/api/v1/crm/customers/**",
-        "/api/v1/crm/campaigns/**" // campaign
     };
 
     @Bean
