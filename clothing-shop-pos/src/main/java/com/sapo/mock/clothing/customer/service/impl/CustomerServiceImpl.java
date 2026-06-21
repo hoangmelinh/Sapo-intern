@@ -4,9 +4,13 @@ package com.sapo.mock.clothing.customer.service.impl;
 import com.sapo.mock.clothing.customer.dto.request.customer.CustomerCreateRequest;
 import com.sapo.mock.clothing.customer.dto.request.customer.CustomerUpdateRequest;
 import com.sapo.mock.clothing.customer.dto.response.CustomerResponse;
+import com.sapo.mock.clothing.customer.dto.response.OrderHistoryResponse;
 import com.sapo.mock.clothing.customer.repository.CustomerRepository;
+import com.sapo.mock.clothing.customer.repository.CustomerVoucherRepository;
 import com.sapo.mock.clothing.customer.service.CustomerService;
 import com.sapo.mock.clothing.entity.Customer;
+import com.sapo.mock.clothing.entity.CustomerVoucher;
+import com.sapo.mock.clothing.entity.Order;
 import com.sapo.mock.clothing.util.constant.CustomerStatusEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -14,11 +18,18 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 public class CustomerServiceImpl implements CustomerService {
 
     @Autowired
     private CustomerRepository customerRepository;
+
+    @Autowired
+    private CustomerVoucherRepository customerVoucherRepository;
 
     // Tìm kiếm khách hàng ACTIVE theo tên hoặc số điện thoại, trả về kết quả dưới dạng Page<CustomerResponse>.
     @Override
@@ -53,16 +64,37 @@ public class CustomerServiceImpl implements CustomerService {
             response.setCustomerGroup(groupInfo);
         }
 
+        // Fetch voucher — có thì set, không có thì để null
+        List<CustomerVoucher> vouchers =
+                customerVoucherRepository.findByCustomerIdOrderByReceivedAtDesc(customer.getId());
+        if (vouchers != null && !vouchers.isEmpty()) {
+            List<CustomerResponse.VoucherInfo> voucherInfos = vouchers.stream().map(cv -> {
+                CustomerResponse.VoucherInfo vi = new CustomerResponse.VoucherInfo();
+                vi.setId(cv.getId());
+                vi.setVoucherCode(cv.getVoucher().getCode());
+                vi.setVoucherName(cv.getVoucher().getName());
+                vi.setDiscountAmount(cv.getVoucher().getDiscountAmount());
+                vi.setMinOrderValue(cv.getVoucher().getMinOrderValue());
+                vi.setStatus(cv.getStatus());
+                vi.setReceivedAt(cv.getReceivedAt());
+                vi.setExpiredAt(cv.getExpiredAt());
+                vi.setUsedAt(cv.getUsedAt());
+                return vi;
+            }).collect(Collectors.toList());
+            response.setVouchers(voucherInfos);
+        }
+        // Không có voucher → giữ nguyên null, không set gì
+
         return response;
     }
 
 
-    // Lấy thông tin chi tiết khách hàng theo ID, nếu không tìm thấy thì ném lỗi.
+    // Lấy thông tin chi tiết khách hàng theo ID
     @Override
+    @Transactional(readOnly = true)
     public CustomerResponse getCustomerById(Integer id) {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với ID: " + id));
-
         return convertToResponse(customer);
     }
 
@@ -148,29 +180,63 @@ public class CustomerServiceImpl implements CustomerService {
         return customers.map(this::convertToCustomerResponse);
     }
 
-    // Hàm Helper chuyển đổi dữ liệu Khách hàng sang DTO
+    // Hàm Helper chuyển đổi dữ liệu Khách hàng sang DTO (dùng cho getCustomersByGroupId)
+    // Tái sử dụng convertToResponse để đảm bảo vouchers cũng được set đồng nhất
     private CustomerResponse convertToCustomerResponse(Customer customer) {
-        CustomerResponse res = new CustomerResponse();
-        res.setId(customer.getId());
-        res.setFullName(customer.getFullName());
-        res.setPhone(customer.getPhone());
-        res.setDateOfBirth(customer.getDateOfBirth());
-        res.setGender(customer.getGender());
-        res.setStatus(customer.getStatus());
-        res.setAddress(customer.getAddress());
-        res.setNote(customer.getNote());
-        res.setCreatedAt(customer.getCreatedAt());
-
-        if (customer.getCustomerGroup() != null) {
-            CustomerResponse.GroupInfo groupInfo = new CustomerResponse.GroupInfo();
-            groupInfo.setId(customer.getCustomerGroup().getId());
-            groupInfo.setName(customer.getCustomerGroup().getName());
-            groupInfo.setCode(customer.getCustomerGroup().getCode());
-            res.setCustomerGroup(groupInfo);
-        }
-        return res;
+        return convertToResponse(customer);
     }
 
+
+
+    // 🌟 Override hàm lấy đơn hàng, gọi trực tiếp qua customerRepository gốc
+    @Override
+    @Transactional(readOnly = true)
+    public Page<OrderHistoryResponse> getCustomerOrders(Integer customerId, Pageable pageable) {
+        // Kiểm tra xem khách hàng có tồn tại không trước khi lấy đơn
+        if (!customerRepository.existsById(customerId)) {
+            throw new RuntimeException("Không tìm thấy khách hàng với ID: " + customerId);
+        }
+
+        // Gọi câu Query lấy Order vừa khai báo trong CustomerRepository
+        Page<Order> orders = customerRepository.findOrdersByCustomerId(customerId, pageable);
+
+        return orders.map(this::convertToOrderHistoryResponse);
+    }
+
+    // Hàm Helper chuyển đổi từ Entity Order sang DTO Response (Đức dán vào cuối file Impl)
+    private OrderHistoryResponse convertToOrderHistoryResponse(Order order) {
+        OrderHistoryResponse response = new OrderHistoryResponse();
+        response.setId(order.getId());
+        response.setOrderNumber(order.getOrderNumber());
+        response.setCustomerId(order.getCustomerId());
+        response.setCustomerName(order.getCustomerName());
+        response.setCreatedById(order.getCreatedBy());
+        response.setCreatedByUsername(order.getCreatedByUsername());
+        response.setTotalAmount(order.getTotalAmount());
+        response.setPaidAmount(order.getPaidAmount());
+        response.setChangeAmount(order.getChangeAmount());
+        response.setStatus(order.getStatus());
+        response.setNote(order.getNote());
+        response.setCreatedAt(order.getCreatedAt());
+        response.setUpdatedAt(order.getUpdatedAt());
+        response.setPrinted(order.isPrinted());
+
+        if (order.getItems() != null) {
+            List<OrderHistoryResponse.ItemInfo> itemDtos = order.getItems().stream().map(item -> {
+                OrderHistoryResponse.ItemInfo itemDto = new OrderHistoryResponse.ItemInfo();
+                itemDto.setId(item.getId());
+                itemDto.setVariantId(item.getVariantId());
+                itemDto.setProductName(item.getProductName());
+                itemDto.setProductSku(item.getProductSku());
+                itemDto.setQuantity(item.getQuantity());
+                itemDto.setUnitPrice(item.getUnitPrice());
+                itemDto.setSubtotal(item.getSubtotal());
+                return itemDto;
+            }).collect(Collectors.toList());
+            response.setItems(itemDtos);
+        }
+        return response;
+    }
 
 
 }

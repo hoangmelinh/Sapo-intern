@@ -4,6 +4,7 @@ import com.sapo.mock.clothing.common.dto.response.RestResponse;
 import com.sapo.mock.clothing.customer.dto.request.customer.CustomerCreateRequest;
 import com.sapo.mock.clothing.customer.dto.request.customer.CustomerUpdateRequest;
 import com.sapo.mock.clothing.customer.dto.response.CustomerResponse;
+import com.sapo.mock.clothing.customer.dto.response.OrderHistoryResponse;
 import com.sapo.mock.clothing.customer.service.CustomerService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -168,6 +169,30 @@ public class CustomerController {
         response.setError(null);
         response.setMessage("Kích hoạt lại tài khoản khách hàng thành công");
         response.setData(null);
+
+        return ResponseEntity.ok(response);
+    }
+
+
+    /**
+     * API: Xem lịch sử đơn hàng của 1 khách hàng cụ thể
+     * URL: GET /api/v1/crm/customers/{customerId}/orders?page=1&size=5
+     */
+    @GetMapping("/{customerId}/orders")
+    public ResponseEntity<RestResponse<Page<OrderHistoryResponse>>> getCustomerOrders(
+            @PathVariable Integer customerId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "5") int size) {
+
+        int targetPage = (page <= 0) ? 1 : page;
+        Pageable pageable = PageRequest.of(targetPage - 1, size, org.springframework.data.domain.Sort.by("createdAt").descending());
+
+        Page<OrderHistoryResponse> result = customerService.getCustomerOrders(customerId, pageable);
+
+        RestResponse<Page<OrderHistoryResponse>> response = new RestResponse<>();
+        response.setStatusCode(HttpStatus.OK.value());
+        response.setMessage("Tải lịch sử đơn hàng của khách thành công!");
+        response.setData(result);
 
         return ResponseEntity.ok(response);
     }

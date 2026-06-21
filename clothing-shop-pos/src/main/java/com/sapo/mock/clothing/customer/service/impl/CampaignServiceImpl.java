@@ -7,12 +7,14 @@ import com.sapo.mock.clothing.customer.dto.response.CustomerResponse;
 import com.sapo.mock.clothing.customer.repository.CampaignRepository;
 import com.sapo.mock.clothing.customer.repository.CareLogRepository;
 import com.sapo.mock.clothing.customer.repository.CustomerRepository;
+import com.sapo.mock.clothing.customer.repository.CustomerVoucherRepository;
 import com.sapo.mock.clothing.customer.service.CampaignService;
 import com.sapo.mock.clothing.entity.CareLog;
 import com.sapo.mock.clothing.entity.Customer;
+import com.sapo.mock.clothing.entity.CustomerVoucher;
 import com.sapo.mock.clothing.entity.User;
-import com.sapo.mock.clothing.entity.CareCampaign; // Đảm bảo import đúng entity nếu có
-import com.sapo.mock.clothing.entity.Order;        // Đảm bảo import đúng entity nếu có
+import com.sapo.mock.clothing.entity.CareCampaign;
+import com.sapo.mock.clothing.entity.Order;
 import com.sapo.mock.clothing.user.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -23,6 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.Instant;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class CampaignServiceImpl implements CampaignService {
@@ -35,6 +39,8 @@ public class CampaignServiceImpl implements CampaignService {
     private CustomerRepository customerRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private CustomerVoucherRepository customerVoucherRepository;
 
     @Override
     public Page<CustomerResponse> getPendingCustomersAfter7Days(Pageable pageable) {
@@ -134,7 +140,7 @@ public class CampaignServiceImpl implements CampaignService {
         return logs.map(this::convertToCareLogListResponse);
     }
 
-    // --- MAPPING HELPER METHODS (Đã làm sạch, không trùng lặp) ---
+    // --- MAPPING HELPER METHODS ---
 
     private CustomerResponse convertToResponse(Customer customer) {
         CustomerResponse res = new CustomerResponse();
@@ -155,6 +161,28 @@ public class CampaignServiceImpl implements CampaignService {
             groupInfo.setCode(customer.getCustomerGroup().getCode());
             res.setCustomerGroup(groupInfo);
         }
+
+        // Fetch voucher — có thì set, không có thì để null
+        List<CustomerVoucher> vouchers =
+                customerVoucherRepository.findByCustomerIdOrderByReceivedAtDesc(customer.getId());
+        if (vouchers != null && !vouchers.isEmpty()) {
+            List<CustomerResponse.VoucherInfo> voucherInfos = vouchers.stream().map(cv -> {
+                CustomerResponse.VoucherInfo vi = new CustomerResponse.VoucherInfo();
+                vi.setId(cv.getId());
+                vi.setVoucherCode(cv.getVoucher().getCode());
+                vi.setVoucherName(cv.getVoucher().getName());
+                vi.setDiscountAmount(cv.getVoucher().getDiscountAmount());
+                vi.setMinOrderValue(cv.getVoucher().getMinOrderValue());
+                vi.setStatus(cv.getStatus());
+                vi.setReceivedAt(cv.getReceivedAt());
+                vi.setExpiredAt(cv.getExpiredAt());
+                vi.setUsedAt(cv.getUsedAt());
+                return vi;
+            }).collect(Collectors.toList());
+            res.setVouchers(voucherInfos);
+        }
+        // Không có voucher → giữ null
+
         return res;
     }
 

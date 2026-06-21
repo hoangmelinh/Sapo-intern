@@ -2,9 +2,6 @@ package com.sapo.mock.clothing.customer.controller;
 
 import com.sapo.mock.clothing.common.dto.response.RestResponse;
 import com.sapo.mock.clothing.customer.dto.event.OrderCompletedEvent;
-import com.sapo.mock.clothing.customer.dto.request.groupcustomer.AssignGroupRequest;
-import com.sapo.mock.clothing.customer.dto.request.groupcustomer.CustomerGroupRequest;
-import com.sapo.mock.clothing.customer.dto.request.groupcustomer.CustomerRequest;
 import com.sapo.mock.clothing.customer.dto.request.groupcustomer.MockOrderRequest;
 import com.sapo.mock.clothing.customer.dto.response.CustomerGroupResponse;
 import com.sapo.mock.clothing.customer.dto.response.CustomerResponse;
@@ -101,67 +98,11 @@ public class CustomerGroupController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * API: Tạo mới nhóm khách hàng (Cấu hình hạng & code cố định)
-     * Endpoint: POST /api/v1/crm/customer-groups
-     */
-    @PostMapping("")
-    public ResponseEntity<RestResponse<CustomerGroupResponse>> createGroup(
-            @jakarta.validation.Valid @RequestBody CustomerGroupRequest request) {
 
-        CustomerGroupResponse result = groupService.createGroup(request);
 
-        RestResponse<CustomerGroupResponse> response = new RestResponse<>(
-                HttpStatus.CREATED.value(),
-                null,
-                "Tạo mới nhóm khách hàng thành công",
-                result
-        );
 
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
-    }
 
-    /**
-     * API: Gán khách hàng vào nhóm qua đường dẫn của Customer Group
-     * Endpoint: PUT /api/v1/crm/customer-groups/assign/{customerId}
-     */
-    // PUT /api/v1/crm/customer-groups/{customerId}/assign
-    @PutMapping("/{customerId}/assign")
-    public ResponseEntity<RestResponse<CustomerResponse>> assignGroup(
-            @PathVariable Integer customerId,
-            @Valid @RequestBody CustomerRequest request) {
 
-        CustomerResponse result = groupService.assignGroupToCustomer(customerId, request);
-
-        RestResponse<CustomerResponse> response = new RestResponse<>();
-        response.setStatusCode(HttpStatus.OK.value());
-        response.setError(null);
-        response.setMessage("Gán khách hàng vào nhóm thành công");
-        response.setData(result);
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * API: Chỉ gán / đổi / rút nhóm nhanh — không cần gửi lại toàn bộ thông tin khách hàng
-     * Endpoint: PATCH /api/v1/crm/customer-groups/{customerId}/assign-group
-     * Body: { "customerGroupId": 5 }  hoặc { "customerGroupId": null } để rút nhóm
-     */
-    @PatchMapping("/{customerId}/assign-group")
-    public ResponseEntity<RestResponse<CustomerResponse>> assignOnlyGroup(
-            @PathVariable Integer customerId,
-            @RequestBody AssignGroupRequest request) {
-
-        CustomerResponse result = groupService.assignOnlyGroup(customerId, request.getCustomerGroupId());
-
-        RestResponse<CustomerResponse> response = new RestResponse<>();
-        response.setStatusCode(HttpStatus.OK.value());
-        response.setError(null);
-        response.setMessage("Gán nhóm cho khách hàng thành công");
-        response.setData(result);
-
-        return ResponseEntity.ok(response);
-    }
 
     /**
      * API: Xem danh sách thành viên (khách hàng) của một nhóm cụ thể
@@ -189,45 +130,7 @@ public class CustomerGroupController {
     }
 
 
-    /**
-     * API: Cập nhật thông tin nhóm khách hàng (Sửa cấu hình chi tiêu phân hạng)
-     * Endpoint: PUT /api/v1/crm/customer-groups/{id}
-     */
-    @PutMapping("/{id}")
-    public ResponseEntity<RestResponse<Void>> updateCustomerGroup(
-            @PathVariable Integer id,
-            @jakarta.validation.Valid @RequestBody CustomerGroupRequest request) {
 
-        groupService.updateCustomerGroup(id, request);
-
-        RestResponse<Void> response = new RestResponse<>(
-                HttpStatus.OK.value(),
-                null,
-                "Cập nhật thông tin nhóm khách hàng thành công",
-                null
-        );
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * API: Xóa mềm nhóm khách hàng (Chuyển trạng thái sang INACTIVE)
-     * Endpoint: DELETE /api/v1/crm/customer-groups/{id}
-     */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<RestResponse<Void>> softDeleteCustomerGroup(@PathVariable Integer id) {
-
-        groupService.softDeleteCustomerGroup(id);
-
-        RestResponse<Void> response = new RestResponse<>(
-                HttpStatus.OK.value(),
-                null,
-                "Xóa nhóm khách hàng thành công (Xóa mềm)",
-                null
-        );
-
-        return ResponseEntity.ok(response);
-    }
 
 
     /**

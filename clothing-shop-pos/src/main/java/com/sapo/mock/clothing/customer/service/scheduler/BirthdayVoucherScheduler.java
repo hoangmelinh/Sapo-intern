@@ -1,4 +1,4 @@
-package com.sapo.mock.clothing.customer.service;
+package com.sapo.mock.clothing.customer.service.scheduler;
 
 
 import com.sapo.mock.clothing.customer.repository.CustomerRepository;

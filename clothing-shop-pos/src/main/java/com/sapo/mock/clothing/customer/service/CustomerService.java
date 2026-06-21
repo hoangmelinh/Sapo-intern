@@ -3,6 +3,7 @@ package com.sapo.mock.clothing.customer.service;
 import com.sapo.mock.clothing.customer.dto.request.customer.CustomerCreateRequest;
 import com.sapo.mock.clothing.customer.dto.request.customer.CustomerUpdateRequest;
 import com.sapo.mock.clothing.customer.dto.response.CustomerResponse;
+import com.sapo.mock.clothing.customer.dto.response.OrderHistoryResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -31,6 +32,8 @@ public interface CustomerService {
     Page<CustomerResponse> getCustomersByGroupId(Integer groupId, Pageable pageable);
 
 
+
+    Page<OrderHistoryResponse> getCustomerOrders(Integer customerId, Pageable pageable);
 
 
 
