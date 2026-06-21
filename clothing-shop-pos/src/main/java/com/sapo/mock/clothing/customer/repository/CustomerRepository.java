@@ -1,6 +1,8 @@
 package com.sapo.mock.clothing.customer.repository;
 
 import com.sapo.mock.clothing.entity.Customer;
+import com.sapo.mock.clothing.entity.Order;
+import com.sapo.mock.clothing.util.constant.CustomerStatusEnum;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,6 +11,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 
 @Repository
@@ -53,4 +57,20 @@ public interface CustomerRepository extends JpaRepository<Customer, Integer>, Jp
             @Param("month") int month,
             @Param("status") com.sapo.mock.clothing.util.constant.CustomerStatusEnum status
     );
+
+
+    @Query("SELECT o FROM Order o WHERE o.customerId = :customerId")
+    Page<Order> findOrdersByCustomerId(@Param("customerId") Integer customerId, Pageable pageable);
+
+
+
+    // 🌟 MỚI BỔ SUNG 1: Lấy danh sách khách hàng đang hoạt động để chạy quét hạ hạng ngầm
+    List<Customer> findByStatus(com.sapo.mock.clothing.util.constant.CustomerStatusEnum status);
+
+    // 🌟 MỚI BỔ SUNG 2: Tính tổng doanh số mua hàng thành công (COMPLETED) trong vòng 12 tháng (365 ngày) qua
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o " +
+            "WHERE o.customerId = :customerId " +
+            "AND o.status = com.sapo.mock.clothing.util.constant.OrderStatus.COMPLETED " +
+            "AND o.createdAt >= :startDate")
+    java.math.BigDecimal calculateSpendingInTimeRange(@Param("customerId") Integer customerId, @Param("startDate") java.time.Instant startDate);
 }
