@@ -55,6 +55,7 @@ public class CustomerServiceImpl implements CustomerService {
         response.setNote(customer.getNote());
         response.setStatus(customer.getStatus());
         response.setCreatedAt(customer.getCreatedAt());
+        response.setRewardPoints(customer.getRewardPoints());
 
         if (customer.getCustomerGroup() != null) {
             CustomerResponse.GroupInfo groupInfo = new CustomerResponse.GroupInfo();
