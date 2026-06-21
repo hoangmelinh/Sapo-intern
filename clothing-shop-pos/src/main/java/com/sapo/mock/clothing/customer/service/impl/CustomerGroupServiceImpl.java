@@ -72,6 +72,7 @@ public class CustomerGroupServiceImpl implements CustomerGroupService {
         res.setNote(customer.getNote());
         res.setStatus(customer.getStatus());
         res.setCreatedAt(customer.getCreatedAt());
+        res.setRewardPoints(customer.getRewardPoints());
 
         // Bọc thông tin nhóm đi kèm để Frontend lấy được tên nhóm hiển thị lên màn hình
         if (customer.getCustomerGroup() != null) {

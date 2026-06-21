@@ -153,6 +153,7 @@ public class CampaignServiceImpl implements CampaignService {
         res.setAddress(customer.getAddress());
         res.setNote(customer.getNote());
         res.setCreatedAt(customer.getCreatedAt());
+        res.setRewardPoints(customer.getRewardPoints());
 
         if (customer.getCustomerGroup() != null) {
             CustomerResponse.GroupInfo groupInfo = new CustomerResponse.GroupInfo();
