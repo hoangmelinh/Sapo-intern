@@ -1,5 +1,6 @@
 package com.sapo.mock.clothing.order.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,6 +10,7 @@ import java.util.List;
 
 @Getter
 @Setter
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ReqCreateOrderDTO {
 
     @NotNull(message = "Customer ID không được để trống")
