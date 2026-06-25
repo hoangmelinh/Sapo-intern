@@ -37,7 +37,11 @@ public class AdminService {
 		if (userRepository.existsByUsername(request.getUsername())) {
 			throw new BadRequestException("Username này đã tồn tại");
 		}
-		if (request.getPhone() != null && !request.getPhone().isEmpty() && userRepository.existsByPhone(request.getPhone())) {
+		String phone = request.getPhone();
+		if (phone != null && phone.trim().isEmpty()) {
+			phone = null;
+		}
+		if (phone != null && userRepository.existsByPhone(phone)) {
 			throw new BadRequestException("Số điện thoại này đã tồn tại");
 		}
 
@@ -45,7 +49,7 @@ public class AdminService {
 		user.setUsername(request.getUsername());
 		user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
 		user.setFullName(request.getFullName());
-		user.setPhone(request.getPhone());
+		user.setPhone(phone);
 		user.setRole(request.getRole());
 		user.setActive(true);
 
@@ -59,12 +63,17 @@ public class AdminService {
 		User user = userRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhân viên"));
 
-		if (request.getPhone() != null && !request.getPhone().isEmpty() && userRepository.existsByPhoneAndIdNot(request.getPhone(), id)) {
+		String phone = request.getPhone();
+		if (phone != null && phone.trim().isEmpty()) {
+			phone = null;
+		}
+
+		if (phone != null && userRepository.existsByPhoneAndIdNot(phone, id)) {
 			throw new BadRequestException("Số điện thoại này đã được sử dụng bởi nhân viên khác");
 		}
 
 		user.setFullName(request.getFullName());
-		user.setPhone(request.getPhone());
+		user.setPhone(phone);
 		user.setRole(request.getRole());
 
 		userRepository.save(user);

@@ -14,9 +14,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SALE')")
 public class OrderController {
 
     private final OrderService orderService;
