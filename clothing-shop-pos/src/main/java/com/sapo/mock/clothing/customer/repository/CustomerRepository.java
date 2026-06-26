@@ -58,11 +58,11 @@ public interface CustomerRepository extends JpaRepository<Customer, Integer>, Jp
         @Query("SELECT o FROM Order o WHERE o.customerId = :customerId")
         Page<Order> findOrdersByCustomerId(@Param("customerId") Integer customerId, Pageable pageable);
 
-        // 🌟 MỚI BỔ SUNG 1: Lấy danh sách khách hàng đang hoạt động để chạy quét hạ
+        // Lấy danh sách khách hàng đang hoạt động để chạy quét hạ
         // hạng ngầm
         List<Customer> findByStatus(com.sapo.mock.clothing.util.constant.CustomerStatusEnum status);
 
-        // 🌟 MỚI BỔ SUNG 2: Tính tổng doanh số mua hàng thành công (COMPLETED) trong
+        // Tính tổng doanh số mua hàng thành công (COMPLETED) trong
         // vòng 12 tháng (365 ngày) qua
         @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o " +
                         "WHERE o.customerId = :customerId " +
@@ -72,4 +72,14 @@ public interface CustomerRepository extends JpaRepository<Customer, Integer>, Jp
                         @Param("startDate") java.time.Instant startDate);
 
         long countByCreatedAtBetween(java.time.Instant start, java.time.Instant end);
+
+
+        //Tìm kiếm khách hàng ACTIVE theo tên hoặc SĐT TRONG MỘT NHÓM CỤ THỂ
+        @Query("SELECT c FROM Customer c WHERE c.customerGroup.id = :groupId " +
+                "AND c.status = com.sapo.mock.clothing.util.constant.CustomerStatusEnum.ACTIVE " +
+                "AND (:keyword IS NULL OR LOWER(c.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+                "OR c.phone LIKE CONCAT('%', :keyword, '%'))")
+        Page<Customer> searchMembersInGroup(@Param("groupId") Integer groupId,
+                                            @Param("keyword") String keyword,
+                                            Pageable pageable);
 }

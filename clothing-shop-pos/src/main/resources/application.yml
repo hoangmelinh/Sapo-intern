@@ -1,0 +1,4 @@
+campaign:
+  config:
+    after-days: 7
+    no-buy-days: 30

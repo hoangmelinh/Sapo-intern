@@ -4,10 +4,7 @@ import com.sapo.mock.clothing.customer.dto.request.campaigns.CareLogRequest;
 import com.sapo.mock.clothing.customer.dto.response.CareLogListResponse;
 import com.sapo.mock.clothing.customer.dto.response.CareLogResponse;
 import com.sapo.mock.clothing.customer.dto.response.CustomerResponse;
-import com.sapo.mock.clothing.customer.repository.CampaignRepository;
-import com.sapo.mock.clothing.customer.repository.CareLogRepository;
-import com.sapo.mock.clothing.customer.repository.CustomerRepository;
-import com.sapo.mock.clothing.customer.repository.CustomerVoucherRepository;
+import com.sapo.mock.clothing.customer.repository.*;
 import com.sapo.mock.clothing.customer.service.CampaignService;
 import com.sapo.mock.clothing.entity.CareLog;
 import com.sapo.mock.clothing.entity.Customer;
@@ -16,7 +13,9 @@ import com.sapo.mock.clothing.entity.User;
 import com.sapo.mock.clothing.entity.CareCampaign;
 import com.sapo.mock.clothing.entity.Order;
 import com.sapo.mock.clothing.user.repository.UserRepository;
+import com.sapo.mock.clothing.util.constant.CampaignType;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -27,6 +26,8 @@ import java.time.ZoneId;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.sapo.mock.clothing.util.constant.CampaignType.*;
 
 @Service
 public class CampaignServiceImpl implements CampaignService {
@@ -42,34 +43,60 @@ public class CampaignServiceImpl implements CampaignService {
     @Autowired
     private CustomerVoucherRepository customerVoucherRepository;
 
-    @Override
-    public Page<CustomerResponse> getPendingCustomersAfter7Days(Pageable pageable) {
-        LocalDate targetDate = LocalDate.now().minusDays(7);
-        Instant startTime = targetDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-        Instant endTime = targetDate.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant();
+    @Autowired
+    private CareCampaignRepository careCampaignRepository;
 
-        Page<Customer> customers = campaignRepository.findCustomersAfter7DaysBuy(startTime, endTime, pageable);
-        return customers.map(this::convertToResponse);
-    }
+    @Value("${campaign.config.after-days:7}")
+    private int afterDays;
 
-    @Override
-    public Page<CustomerResponse> getPendingCustomersLongTimeNoBuy(Pageable pageable) {
-        LocalDate thirtyDaysAgoDate = LocalDate.now().minusDays(30);
-        Instant thirtyDaysAgo = thirtyDaysAgoDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-
-        Page<Customer> customers = campaignRepository.findCustomersLongTimeNoBuy(thirtyDaysAgo, pageable);
-        return customers.map(this::convertToResponse);
-    }
+    @Value("${campaign.config.no-buy-days:30}")
+    private int noBuyDays;
 
     @Override
-    public Page<CustomerResponse> getPendingCustomersRecallSchedule(Pageable pageable) {
+    public Page<CustomerResponse> getPendingCustomers(CampaignType type, Pageable pageable) {
+        Page<Customer> customers;
         LocalDate today = LocalDate.now();
-        Instant startTime = today.atStartOfDay(ZoneId.systemDefault()).toInstant();
-        Instant endTime = today.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant();
 
-        Page<Customer> customers = campaignRepository.findCustomersRecallSchedule(startTime, endTime, pageable);
+        // Mốc tính đầu ngày hôm nay (00:00:00) để làm mốc chặn loại trừ
+        Instant todayStart = today.atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+        switch (type) {
+            case AFTER_7_DAYS:
+                LocalDate targetDate = today.minusDays(afterDays);
+                Instant start7Days = targetDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+                Instant end7Days = targetDate.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant();
+                // Truyền thêm biến todayStart vào hàm
+                customers = campaignRepository.findCustomersAfter7DaysBuy(start7Days, end7Days, todayStart, pageable);
+                break;
+
+            case LONG_TIME_NO_BUY:
+                LocalDate thirtyDaysAgoDate = today.minusDays(noBuyDays);
+                Instant thirtyDaysAgo = thirtyDaysAgoDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+                // Truyền thêm biến todayStart vào hàm
+                customers = campaignRepository.findCustomersLongTimeNoBuy(thirtyDaysAgo, todayStart, pageable);
+                break;
+
+            case RECALL_SCHEDULE:
+                Instant startToday = today.atStartOfDay(ZoneId.systemDefault()).toInstant();
+                Instant endToday = today.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant();
+                customers = campaignRepository.findCustomersRecallSchedule(startToday, endToday, pageable);
+                break;
+
+            case HAPPY_BIRTHDAY:
+                int currentMonth = today.getMonthValue();
+                // Truyền thêm biến todayStart vào hàm
+                customers = campaignRepository.findCustomersByBirthdayMonth(currentMonth, todayStart, pageable);
+                break;
+
+            default:
+                throw new IllegalArgumentException("Loại chiến dịch chăm sóc không hợp lệ!");
+        }
+
         return customers.map(this::convertToResponse);
     }
+
+
+
 
     @Override
     public Page<CareLogListResponse> getAllCareLogs(Pageable pageable) {
@@ -98,10 +125,12 @@ public class CampaignServiceImpl implements CampaignService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với ID: " + request.getCustomerId()));
         User staff = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên hệ thống với ID: " + userId));
-
+        CareCampaign campaign = careCampaignRepository.findById(request.getCampaignId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy chiến dịch với ID: " + request.getCampaignId()));
         CareLog careLog = new CareLog();
         careLog.setCustomer(customer);
         careLog.setCalledBy(staff);
+        careLog.setCampaign(campaign);
         careLog.setResult(request.getResult());
         careLog.setNote(request.getNote());
         careLog.setNextRetryAt(request.getNextRetryAt());
@@ -132,11 +161,12 @@ public class CampaignServiceImpl implements CampaignService {
     }
 
     @Override
-    public Page<CareLogListResponse> searchCareLogsByPhone(String phone, String result, Instant fromDate, Instant toDate, Pageable pageable) {
-        String searchPhone = (phone != null && !phone.trim().isEmpty()) ? phone.trim() : null;
+    public Page<CareLogListResponse> searchCareLogs(String keyword, String result, Instant fromDate, Instant toDate, Pageable pageable) {
+        String searchKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
         String searchResult = (result != null && !result.trim().isEmpty()) ? result.trim() : null;
 
-        Page<CareLog> logs = careLogRepository.searchCareLogsByPhone(searchPhone, searchResult, fromDate, toDate, pageable);
+        // Gọi Repository mới với tham số searchKeyword
+        Page<CareLog> logs = careLogRepository.searchCareLogs(searchKeyword, searchResult, fromDate, toDate, pageable);
         return logs.map(this::convertToCareLogListResponse);
     }
 
@@ -208,6 +238,14 @@ public class CampaignServiceImpl implements CampaignService {
             info.setUsername(careLog.getCalledBy().getUsername());
             info.setFullName(careLog.getCalledBy().getFullName());
             res.setCalledBy(info);
+        }
+
+        if (careLog.getCampaign() != null) {
+            CareLogListResponse.CampaignInfo info = new CareLogListResponse.CampaignInfo();
+            info.setId(careLog.getCampaign().getId());
+            info.setName(careLog.getCampaign().getName());
+            info.setType(careLog.getCampaign().getType()); // Vì entity lưu String nên gọi trực tiếp thoải mái
+            res.setCampaign(info);
         }
         return res;
     }

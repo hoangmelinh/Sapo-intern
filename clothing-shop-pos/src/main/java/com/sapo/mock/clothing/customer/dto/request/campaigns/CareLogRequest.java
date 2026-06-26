@@ -12,6 +12,9 @@ public class CareLogRequest {
     @NotNull(message = "ID khách hàng không được để trống")
     private Integer customerId;
 
+    @NotNull(message = "ID chiến dịch không được để trống")
+    private Integer campaignId;
+
     @NotNull(message = "Kết quả cuộc gọi không được để trống")
     private String result;      // Ví dụ: "NGHE_MAY", "CUOC_GOI_NHO", "HEN_GOI_LAI", "TU_CHOI"
 

@@ -34,3 +34,5 @@ build/
 
 ### Secret Properties ###
 **/application-secret.properties
+
+**/application.yml

@@ -7,6 +7,7 @@ import com.sapo.mock.clothing.customer.dto.response.CareLogListResponse;
 import com.sapo.mock.clothing.customer.dto.response.CareLogResponse;
 import com.sapo.mock.clothing.customer.dto.response.CustomerResponse;
 import com.sapo.mock.clothing.customer.service.CampaignService;
+import com.sapo.mock.clothing.util.constant.CampaignType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -30,44 +31,31 @@ public class CampaignController {
      */
     @GetMapping("/pending-customers")
     public ResponseEntity<RestResponse<Page<CustomerResponse>>> getPendingCustomers(
-            @RequestParam(name = "type") String type,
+            @RequestParam(name = "type") CampaignType type,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<CustomerResponse> result;
 
-        // Nhánh 1: Sau mua 7 ngày
-        if ("AFTER_7_DAYS".equalsIgnoreCase(type)) {
-            result = campaignService.getPendingCustomersAfter7Days(pageable);
-            RestResponse<Page<CustomerResponse>> response = new RestResponse<>(
-                    HttpStatus.OK.value(), null, "Lấy danh sách khách hàng sau mua 7 ngày thành công", result
-            );
-            return ResponseEntity.ok(response);
+        // Gọi hàm gộp duy nhất
+        Page<CustomerResponse> result = campaignService.getPendingCustomers(type, pageable);
+
+        // Sinh message động dựa theo loại chiến dịch
+        String message = "Lấy danh sách khách hàng thành công";
+        if (type == CampaignType.AFTER_7_DAYS) {
+            message = "Lấy danh sách khách hàng sau mua thành công";
+        } else if (type == CampaignType.LONG_TIME_NO_BUY) {
+            message = "Lấy danh sách khách hàng quá hạn chưa phát sinh đơn mới thành công";
+        } else if (type == CampaignType.RECALL_SCHEDULE) {
+            message = "Lấy danh sách khách hàng hẹn gọi lại ngày hôm nay thành công";
+        }else if (type == CampaignType.HAPPY_BIRTHDAY) {
+            message = "Lấy danh sách khách hàng có sinh nhật trong tháng hiện tại thành công";
         }
 
-        // Nhánh 2: Quá 30 ngày chưa mua
-        else if ("LONG_TIME_NO_BUY".equalsIgnoreCase(type)) {
-            result = campaignService.getPendingCustomersLongTimeNoBuy(pageable);
-            RestResponse<Page<CustomerResponse>> response = new RestResponse<>(
-                    HttpStatus.OK.value(), null, "Lấy danh sách khách hàng quá 30 ngày chưa phát sinh đơn mới thành công", result
-            );
-            return ResponseEntity.ok(response);
-        }
-
-        // Lịch hẹn gọi lại ngày hôm nay
-        else if ("RECALL_SCHEDULE".equalsIgnoreCase(type)) {
-            result = campaignService.getPendingCustomersRecallSchedule(pageable);
-            RestResponse<Page<CustomerResponse>> response = new RestResponse<>(
-                    HttpStatus.OK.value(), null, "Lấy danh sách khách hàng hẹn gọi lại ngày hôm nay thành công", result
-            );
-            return ResponseEntity.ok(response);
-        }
-
-        // Trường hợp truyền bậy bạ bạ lên URL
-        else {
-            throw new IllegalArgumentException("Loại chiến dịch chăm sóc không hợp lệ!");
-        }
+        RestResponse<Page<CustomerResponse>> response = new RestResponse<>(
+                HttpStatus.OK.value(), null, message, result
+        );
+        return ResponseEntity.ok(response);
     }
 
 
@@ -179,8 +167,8 @@ public class CampaignController {
      * Endpoint: GET /api/crm/campaigns/care-logs/search
      */
     @GetMapping("/care-logs/search")
-    public ResponseEntity<RestResponse<Page<CareLogListResponse>>> searchCareLogsByPhone(
-            @RequestParam(required = false) String phone,
+    public ResponseEntity<RestResponse<Page<CareLogListResponse>>> searchCareLogs(
+            @RequestParam(required = false) String keyword, // Đổi từ phone -> keyword để đại diện cho cả Tên/SĐT
             @RequestParam(required = false) String result,
             @RequestParam(required = false) Instant fromDate,
             @RequestParam(required = false) Instant toDate,
@@ -189,12 +177,13 @@ public class CampaignController {
 
         Pageable pageable = PageRequest.of(page, size, org.springframework.data.domain.Sort.by("id").descending());
 
-        Page<CareLogListResponse> searchResult = campaignService.searchCareLogsByPhone(phone, result, fromDate, toDate, pageable);
+        // Gọi service với keyword mới
+        Page<CareLogListResponse> searchResult = campaignService.searchCareLogs(keyword, result, fromDate, toDate, pageable);
 
         RestResponse<Page<CareLogListResponse>> response = new RestResponse<>(
                 HttpStatus.OK.value(),
                 null,
-                "Tìm kiếm lịch sử chăm sóc theo số điện thoại thành công",
+                "Tìm kiếm lịch sử chăm sóc thành công",
                 searchResult
         );
         return ResponseEntity.ok(response);
