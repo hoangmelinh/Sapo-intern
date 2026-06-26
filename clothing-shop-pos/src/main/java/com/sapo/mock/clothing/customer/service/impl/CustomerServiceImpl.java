@@ -174,13 +174,15 @@ public class CustomerServiceImpl implements CustomerService {
 
     // Get customers by group ID, only ACTIVE ones.
     @Override
-    public Page<CustomerResponse> getCustomersByGroupId(Integer groupId, Pageable pageable) {
-        Page<Customer> customers = customerRepository.findByCustomerGroupId(groupId, pageable);
+    public Page<CustomerResponse> getCustomersByGroupId(Integer groupId, String keyword, Pageable pageable) {
+        // Xử lý chuẩn hóa từ khóa nếu Frontend truyền chuỗi rỗng "" hoặc khoảng trắng
+        String searchKey = (keyword == null || keyword.trim().isEmpty()) ? null : keyword.trim();
 
-        // Map danh sách Entity khách hàng sang danh sách DTO để trả về cho Frontend
-        return customers.map(this::convertToCustomerResponse);
+        Page<Customer> customers = customerRepository.searchMembersInGroup(groupId, searchKey, pageable);
+
+        // Tái sử dụng hàm helper convertToResponse có sẵn của Đức để map sang DTO
+        return customers.map(this::convertToResponse);
     }
-
     // Hàm Helper chuyển đổi dữ liệu Khách hàng sang DTO (dùng cho getCustomersByGroupId)
     // Tái sử dụng convertToResponse để đảm bảo vouchers cũng được set đồng nhất
     private CustomerResponse convertToCustomerResponse(Customer customer) {

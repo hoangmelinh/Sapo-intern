@@ -20,10 +20,16 @@ public interface CampaignRepository extends JpaRepository<Customer, Integer> {
             "JOIN Order o ON c.id = o.customerId " +
             "WHERE o.status = com.sapo.mock.clothing.util.constant.OrderStatus.COMPLETED " +
             "AND o.createdAt >= :startTime AND o.createdAt <= :endTime " +
-            "AND c.status = com.sapo.mock.clothing.util.constant.CustomerStatusEnum.ACTIVE")
+            "AND c.status = com.sapo.mock.clothing.util.constant.CustomerStatusEnum.ACTIVE " +
+            "AND c.id NOT IN (" +
+            "    SELECT cl.customer.id FROM CareLog cl " +
+            "    WHERE cl.campaign.type = 'AFTER_7_DAYS' " +
+            "    AND cl.calledAt >= :todayStart" +
+            ")")
     Page<Customer> findCustomersAfter7DaysBuy(
             @Param("startTime") Instant startTime,
             @Param("endTime") Instant endTime,
+            @Param("todayStart") Instant todayStart, // Thêm mốc đầu ngày hôm nay để chặn trùng
             Pageable pageable
     );
 
@@ -38,12 +44,17 @@ public interface CampaignRepository extends JpaRepository<Customer, Integer> {
             "    SELECT DISTINCT o.customerId FROM Order o " +
             "    WHERE o.status = com.sapo.mock.clothing.util.constant.OrderStatus.COMPLETED " +
             "    AND o.createdAt >= :thirtyDaysAgo" +
+            ") " +
+            "AND c.id NOT IN (" +
+            "    SELECT cl.customer.id FROM CareLog cl " +
+            "    WHERE cl.campaign.type = 'LONG_TIME_NO_BUY' " +
+            "    AND cl.calledAt >= :todayStart" +
             ")")
     Page<Customer> findCustomersLongTimeNoBuy(
             @Param("thirtyDaysAgo") Instant thirtyDaysAgo,
+            @Param("todayStart") Instant todayStart, // Thêm mốc đầu ngày hôm nay để chặn trùng
             Pageable pageable
     );
-
     /**
      * 3. Chiến dịch RECALL_SCHEDULE
      * Tìm khách hàng ACTIVE có lịch hẹn gọi lại nằm trong ngày hôm nay.
@@ -51,10 +62,31 @@ public interface CampaignRepository extends JpaRepository<Customer, Integer> {
     @Query("SELECT DISTINCT c FROM Customer c " +
             "JOIN CareLog log ON c = log.customer " +
             "WHERE log.nextRetryAt >= :startTime AND log.nextRetryAt <= :endTime " +
-            "AND c.status = com.sapo.mock.clothing.util.constant.CustomerStatusEnum.ACTIVE")
+            "AND c.status = com.sapo.mock.clothing.util.constant.CustomerStatusEnum.ACTIVE " +
+            "AND log.id NOT IN (" +
+            "    SELECT cl.id FROM CareLog cl WHERE cl.calledAt > log.nextRetryAt" +
+            ")")
     Page<Customer> findCustomersRecallSchedule(
             @Param("startTime") Instant startTime,
             @Param("endTime") Instant endTime,
+            Pageable pageable
+    );
+
+    /**
+     * 4. Chiến dịch HAPPY_BIRTHDAY
+     * Quét danh sách khách hàng ACTIVE có tháng sinh nhật trùng với tháng truyền vào.
+     */
+    @Query("SELECT c FROM Customer c " +
+            "WHERE c.status = com.sapo.mock.clothing.util.constant.CustomerStatusEnum.ACTIVE " +
+            "AND FUNCTION('MONTH', c.dateOfBirth) = :currentMonth " +
+            "AND c.id NOT IN (" +
+            "    SELECT cl.customer.id FROM CareLog cl " +
+            "    WHERE cl.campaign.type = 'HAPPY_BIRTHDAY' " +
+            "    AND cl.calledAt >= :todayStart" +
+            ")")
+    Page<Customer> findCustomersByBirthdayMonth(
+            @Param("currentMonth") int currentMonth,
+            @Param("todayStart") Instant todayStart, // Thêm mốc đầu ngày hôm nay để chặn trùng
             Pageable pageable
     );
 }

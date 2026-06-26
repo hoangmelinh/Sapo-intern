@@ -43,6 +43,9 @@ public class SecurityConfiguration {
         "/storage/**",
         "api/products",
         "/storage/**",
+			"/api/crm/customers/**",
+			"/api/crm/campaigns/**",
+			"/api/crm/customer-groups/**"
     };
 
 	@Bean

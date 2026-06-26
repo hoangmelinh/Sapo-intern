@@ -14,6 +14,7 @@ public class CareLogListResponse {
 
     private CustomerInfo customer;
     private UserInfo calledBy;
+    private CampaignInfo campaign;
 
     @Getter
     @Setter
@@ -29,5 +30,13 @@ public class CareLogListResponse {
         private Integer id;
         private String username;
         private String fullName;
+    }
+
+    @Getter
+    @Setter
+    public static class CampaignInfo {
+        private Integer id;
+        private String name;
+        private String type;
     }
 }

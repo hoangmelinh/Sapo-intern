@@ -2,6 +2,7 @@ package com.sapo.mock.clothing.customer.repository;
 
 
 import com.sapo.mock.clothing.customer.dto.response.CustomerGroupResponse;
+import com.sapo.mock.clothing.entity.Customer;
 import com.sapo.mock.clothing.entity.CustomerGroup;
 import com.sapo.mock.clothing.util.constant.CustomerStatusEnum;
 import org.springframework.data.domain.Page;
@@ -68,5 +69,7 @@ public interface CustomerGroupRepository extends JpaRepository<CustomerGroup, In
 
     // Lấy tất cả các hạng thành viên đang hoạt động (Đồng, Bạc, Vàng) để đối chiếu
     List<CustomerGroup> findByStatus(CustomerStatusEnum status);
+
+
 
 }

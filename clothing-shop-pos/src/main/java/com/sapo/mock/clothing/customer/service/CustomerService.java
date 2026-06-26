@@ -29,7 +29,7 @@ public interface CustomerService {
     void activateCustomer(Integer id);
 
     // Get customers by group ID, only ACTIVE ones.
-    Page<CustomerResponse> getCustomersByGroupId(Integer groupId, Pageable pageable);
+    Page<CustomerResponse> getCustomersByGroupId(Integer groupId, String keyword, Pageable pageable);
 
 
 

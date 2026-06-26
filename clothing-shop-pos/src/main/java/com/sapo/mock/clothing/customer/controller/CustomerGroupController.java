@@ -102,33 +102,33 @@ public class CustomerGroupController {
 
 
 
-
-
     /**
-     * API: Xem danh sách thành viên (khách hàng) của một nhóm cụ thể
-     * Endpoint: GET /api/crm/customer-groups/{groupId}/members?page=0&size=10
+     * API: Lấy danh sách + Tìm kiếm thành viên trong từng nhóm cụ thể
+     * URL TEST POSTMAN:
+     * - Chỉ lọc theo nhóm: GET http://localhost:8080/api/v1/crm/customers/1/members?page=0&size=10
+     * - Tìm kiếm trong nhóm: GET http://localhost:8080/api/v1/crm/customers/1/members?keyword=Đinh&page=0&size=10
      */
     @GetMapping("/{groupId}/members")
     public ResponseEntity<RestResponse<Page<CustomerResponse>>> getGroupMembers(
             @PathVariable Integer groupId,
+            @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         // Sắp xếp danh sách khách hàng mới gia nhập hạng lên đầu tiên
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
 
-        // Gọi sang CustomerService đã được xử lý ở tầng trên để lấy danh sách thành viên
-        Page<CustomerResponse> result = customerService.getCustomersByGroupId(groupId, pageable);
+        // Truyền thêm param keyword vào service
+        Page<CustomerResponse> result = customerService.getCustomersByGroupId(groupId, keyword, pageable);
 
         RestResponse<Page<CustomerResponse>> response = new RestResponse<>();
         response.setStatusCode(HttpStatus.OK.value());
         response.setError(null);
-        response.setMessage("Lấy danh sách thành viên của nhóm thành công");
+        response.setMessage("Lấy danh sách và tìm kiếm thành viên của nhóm thành công");
         response.setData(result);
 
         return ResponseEntity.ok(response);
     }
-
 
 
 
