@@ -177,6 +177,7 @@ public class CampaignServiceImpl implements CampaignService {
         res.setId(customer.getId());
         res.setFullName(customer.getFullName());
         res.setPhone(customer.getPhone());
+        res.setEmail(customer.getEmail());
         res.setDateOfBirth(customer.getDateOfBirth());
         res.setGender(customer.getGender());
         res.setStatus(customer.getStatus());
