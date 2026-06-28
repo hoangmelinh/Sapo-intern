@@ -21,9 +21,10 @@ public class SupplierSpecification {
 
 				Predicate nameLike = cb.like(cb.lower(root.get("name")), searchKeyword);
 				Predicate phoneLike = cb.like(root.get("phone"), searchKeyword);
+				Predicate emailLike = cb.like(root.get("email"), searchKeyword);
 
 				// Gom nhóm (name LIKE ? OR phone LIKE ?)
-				predicates.add(cb.or(nameLike, phoneLike));
+				predicates.add(cb.or(nameLike, phoneLike, emailLike));
 			}
 
 			// 2. Lọc theo trạng thái hoạt động (Nếu Frontend có truyền lên)
