@@ -42,6 +42,7 @@ public class AuthController {
         this.userService = userService;
     }
 
+    // trigger cicd
     //
     /**
      * Đăng nhập hệ thống.
