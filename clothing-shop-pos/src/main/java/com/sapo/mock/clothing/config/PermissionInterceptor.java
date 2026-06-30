@@ -49,12 +49,13 @@ public class PermissionInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        // ROLE_SALE: Access to products, categories, orders, customers
+        // ROLE_SALE: Access to products, categories, orders, customers, recommendations (excluding rebuild)
         if (role == RoleEnum.ROLE_SALE) {
             if (requestURI.startsWith("/api/products") ||
                 requestURI.startsWith("/api/categories") ||
                 requestURI.startsWith("/api/orders") ||
-                requestURI.startsWith("/api/crm/customers")) {
+                requestURI.startsWith("/api/crm/customers") ||
+                (requestURI.startsWith("/api/recommendations") && !requestURI.startsWith("/api/recommendations/rebuild"))) {
                 return true;
             }
         }

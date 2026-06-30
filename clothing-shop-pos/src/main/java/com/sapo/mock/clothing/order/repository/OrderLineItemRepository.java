@@ -3,8 +3,11 @@ package com.sapo.mock.clothing.order.repository;
 import com.sapo.mock.clothing.entity.OrderLineItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 
 @Repository
@@ -15,4 +18,20 @@ public interface OrderLineItemRepository extends JpaRepository<OrderLineItem, In
 
     // Tối ưu N+1: lấy hàng loạt line items cho nhiều đơn hàng cùng lúc
     List<OrderLineItem> findByOrderIdIn(List<Integer> orderIds);
+
+    /**
+     * [AI Recommendation] Lấy tất cả cặp (order_id, product_id) trong N tháng gần nhất.
+     * JOIN qua product_variant vì OrderLineItem chỉ có variantId, không có productId.
+     * GROUP BY để đảm bảo 1 đơn không đếm trùng cùng 1 product (VD: mua 2 size khác nhau).
+     */
+    @Query(value = """
+            SELECT oli.order_id, pv.product_id
+            FROM order_line_item oli
+            JOIN product_variant pv ON oli.variant_id = pv.id
+            JOIN orders o ON oli.order_id = o.id
+            WHERE o.created_at >= :cutoffDate
+              AND o.status = 'COMPLETED'
+            GROUP BY oli.order_id, pv.product_id
+            """, nativeQuery = true)
+    List<Object[]> findOrderProductPairsSince(@Param("cutoffDate") Instant cutoffDate);
 }
