@@ -55,8 +55,8 @@ public interface CustomerRepository extends JpaRepository<Customer, Integer>, Jp
                         @Param("month") int month,
                         @Param("status") com.sapo.mock.clothing.util.constant.CustomerStatusEnum status);
 
-        @Query("SELECT o FROM Order o WHERE o.customerId = :customerId")
-        Page<Order> findOrdersByCustomerId(@Param("customerId") Integer customerId, Pageable pageable);
+        @Query("SELECT o FROM Order o WHERE o.customerId = :customerId AND (:keyword IS NULL OR :keyword = '' OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+        Page<Order> findOrdersByCustomerId(@Param("customerId") Integer customerId, @Param("keyword") String keyword, Pageable pageable);
 
         // Lấy danh sách khách hàng đang hoạt động để chạy quét hạ
         // hạng ngầm
@@ -82,4 +82,8 @@ public interface CustomerRepository extends JpaRepository<Customer, Integer>, Jp
         Page<Customer> searchMembersInGroup(@Param("groupId") Integer groupId,
                                             @Param("keyword") String keyword,
                                             Pageable pageable);
+
+        @org.springframework.data.jpa.repository.Modifying
+        @Query("UPDATE Customer c SET c.customerGroup = null WHERE c.customerGroup.id = :groupId")
+        void removeGroupFromAllCustomers(@Param("groupId") Integer groupId);
 }

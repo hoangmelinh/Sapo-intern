@@ -20,5 +20,7 @@ public class CareLogRequest {
 
     private String note;        // Chi tiết cuộc trao đổi (Gõ tay)
 
+    private String potentialStatus; // "TIEM_NANG", "KHONG_TIEM_NANG", "MONG_LUNG"
+
     private Instant nextRetryAt; // Lịch hẹn gọi lại lần sau (nếu có)
 }

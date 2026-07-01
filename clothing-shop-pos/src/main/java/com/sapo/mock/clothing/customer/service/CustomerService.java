@@ -33,7 +33,7 @@ public interface CustomerService {
 
 
 
-    Page<OrderHistoryResponse> getCustomerOrders(Integer customerId, Pageable pageable);
+    Page<OrderHistoryResponse> getCustomerOrders(Integer customerId, String keyword, Pageable pageable);
 
 
 

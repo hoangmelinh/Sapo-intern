@@ -26,6 +26,8 @@ public class CustomerGroupResponse {
     private BigDecimal maxSpending;
     private RankCodeEnum code;
     private Instant createdAt;
+    private Integer birthdayVoucherId;
+    private String birthdayVoucherName;
 
     public CustomerGroupResponse(Integer id, String name, String description, CustomerStatusEnum status, Long totalCustomers, String note, Instant createdAt) {
         this.id = id;

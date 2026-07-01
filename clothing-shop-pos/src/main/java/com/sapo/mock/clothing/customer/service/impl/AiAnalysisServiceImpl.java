@@ -1,16 +1,23 @@
 package com.sapo.mock.clothing.customer.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sapo.mock.clothing.customer.dto.response.AiResultDto;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
+import com.sapo.mock.clothing.customer.dto.response.AiSuggestionResponseDto;
+import com.sapo.mock.clothing.customer.repository.CareCampaignRepository;
+import com.sapo.mock.clothing.customer.repository.CustomerRepository;
 import com.sapo.mock.clothing.customer.service.AiAnalysisService;
+import com.sapo.mock.clothing.entity.CareCampaign;
+import com.sapo.mock.clothing.entity.Customer;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,54 +31,91 @@ public class AiAnalysisServiceImpl implements AiAnalysisService {
     @Value("${ai.gemini.api-url}")
     private String apiUrl;
 
+    @Autowired
+    private CustomerRepository customerRepository;
+
+    @Autowired
+    private CareCampaignRepository careCampaignRepository;
+
     private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(java.time.Duration.ofSeconds(10))
+            .connectTimeout(java.time.Duration.ofSeconds(30))
             .build();
-    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // ĐÃ SỬA: Cho phép chứa ký tự xuống dòng mộc trong giá trị JSON của AI trả về
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .enable(JsonReadFeature.ALLOW_UNESCAPED_CONTROL_CHARS.mappedFeature());
 
     @Override
-    public AiResultDto analyzeNote(String note) {
-        AiResultDto fallback = new AiResultDto();
-        fallback.setResult("KHONG_XAC_DINH");
-        fallback.setPotentialStatus("KHONG_XAC_DINH");
-
-        if (note == null || note.trim().isEmpty()) {
-            return fallback;
-        }
+    public AiSuggestionResponseDto suggestScriptAndSms(Integer customerId, Integer campaignId) {
+        AiSuggestionResponseDto fallback = new AiSuggestionResponseDto();
+        fallback.setCallScript("Chào anh/chị, em gọi từ Sapo Shop ạ. Rất mong anh/chị dành chút thời gian nghe máy.");
+        fallback.setSmsTemplate("Chào anh/chị, Sapo Shop đang có ưu đãi hấp dẫn. Mời anh/chị ghé qua cửa hàng nhé!");
+        fallback.setObjectionHandling("Dạ không sao ạ, em xin phép gửi thông tin ưu đãi qua SMS/Zalo để anh/chị tham khảo khi rảnh nhé.");
 
         try {
-            String url = apiUrl;
+            Customer customer = customerRepository.findById(customerId).orElse(null);
+            CareCampaign campaign = careCampaignRepository.findById(campaignId).orElse(null);
 
-            java.time.ZoneId vnZone = java.time.ZoneId.of("Asia/Ho_Chi_Minh");
-            java.time.ZonedDateTime vnTime = java.time.ZonedDateTime.now(vnZone);
-            String currentDateTimeVn = vnTime.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX"));
-            
-            String systemInstruction = "Bạn là hệ thống CRM phân tích cuộc gọi cho cửa hàng quần áo Sapo.\n"
-                    + "Nhiệm vụ của bạn là đọc ghi chú (note) cuộc gọi và phân loại thành 3 thông tin:\n"
-                    + "1. result: Thuộc 1 trong các giá trị: GOI_NHO, TU_CHOI, NGHE_MAY, HEN_GOI_LAI.\n" 
-                    + "2. potential_status: Phân loại thái độ khách hàng, bắt buộc trả về đúng 1 trong 3 giá trị sau: 'TIEM_NANG' (quan tâm, hỏi giá, muốn xem đồ, chốt đơn), 'KHONG_TIEM_NANG' (từ chối, sai số, gắt gỏng, thuê bao), 'MONG_LUNG' (khách nghe máy nhưng lấp lửng, chưa rõ ràng).\n"
-                    + "3. nextRetryTime: Nếu khách hẹn gọi lại (ví dụ chiều nay, mai lúc 3h), hãy ước lượng thời gian gọi lại theo chuẩn ISO-8601 múi giờ UTC (ví dụ 2026-06-28T08:00:00Z). Giờ hiện tại của nhân viên đang là " + currentDateTimeVn + " (Múi giờ Việt Nam UTC+7). Lưu ý: Khi tính toán xong giờ Việt Nam, PHẢI đổi ngược sang UTC (trừ đi 7 tiếng) để trả về hệ thống. Nếu không có hẹn, trả về null.\n"
-                    + "Yêu cầu bắt buộc trả về ĐÚNG định dạng JSON cấu trúc sau, không giải thích gì thêm:\n"
-                    + "{\"result\": \"chuỗi_kết_quả\", \"potential_status\": \"TIEM_NANG_hoac_MONG_LUNG\", \"nextRetryTime\": \"chuỗi_ISO8601_hoac_null\"}\n\n"
-                    + "Nội dung ghi chú cần phân tích: " + note;
+            if (customer == null || campaign == null) {
+                return fallback;
+            }
 
-            // Dùng Map đóng gói tự động bằng ObjectMapper để chống vỡ định dạng JSON do dấu ngoặc kép
-            Map<String, Object> textPart = new HashMap<>();
-            textPart.put("text", systemInstruction);
+            int age = 0;
+            if (customer.getDateOfBirth() != null) {
+                age = Period.between(customer.getDateOfBirth(), LocalDate.now()).getYears();
+            }
 
-            Map<String, Object> parts = new HashMap<>();
-            parts.put("parts", List.of(textPart));
+            String genderStr = customer.getGender() != null ? customer.getGender().name() : "Không rõ";
 
-            Map<String, Object> contents = new HashMap<>();
-            contents.put("contents", List.of(parts));
+            String birthdayRule = (campaign.getType() != null && campaign.getType().contains("BIRTHDAY")) || (campaign.getName() != null && campaign.getName().toLowerCase().contains("sinh nhật"))
+                    ? "LƯU Ý RIÊNG: Đây là chiến dịch chúc mừng Sinh nhật, TUYỆT ĐỐI KHÔNG giải thích chi tiết về điểm thưởng hay chi tiết voucher. Chỉ cần báo cửa hàng có một phần quà/voucher sinh nhật đặc biệt tặng khách.\n"
+                    : "";
 
-            String jsonPayload = objectMapper.writeValueAsString(contents);
+            String systemInstruction = "Bạn là một nhân viên chăm sóc khách hàng xuất sắc của cửa hàng quần áo Sapo Clothing.\n"
+                    + "Nhiệm vụ của bạn là TỰ ĐỘNG sáng tạo ra kịch bản gọi điện, tin nhắn SMS và cẩm nang xử lý từ chối HAY NHẤT, CHUYÊN NGHIỆP NHẤT để liên hệ với khách trong chiến dịch: '" + campaign.getName() + "'.\n"
+                    + birthdayRule
+                    + "Thông tin khách hàng: Tên: " + customer.getFullName() + " (" + genderStr + ", " + (age > 0 ? age + " tuổi" : "Chưa rõ") + "). Tổng chi tiêu: " + (customer.getTotalSpent() != null ? customer.getTotalSpent() : "0") + " VNĐ. Điểm: " + customer.getRewardPoints() + ".\n"
+                    + "YÊU CẦU QUAN TRỌNG:\n"
+                    + "1. Kịch bản gọi điện (call_script) phải chia thành các phần rõ ràng như: Lời mở đầu, Giới thiệu & Thăm dò nhu cầu, Kết thúc cuộc gọi.\n"
+                    + "2. Kịch bản xử lý từ chối (objection_handling) cần gợi ý vài trường hợp thực tế (Ví dụ: Khách bận, Khách chưa có nhu cầu, Khách chê giá cao) kèm cách đáp lời lịch sự.\n"
+                    + "3. TUYỆT ĐỐI KHÔNG được tự bịa ra các voucher, mã giảm giá hay chương trình khuyến mãi ảo (không tự bịa voucher 100k, 20%...). Chỉ được nhắc đến số Điểm hiện có của khách hàng nếu khách có điểm.\n"
+                    + "4. TUYỆT ĐỐI không dùng ký tự ngoặc kép (\") bên trong nội dung văn bản để tránh làm lỗi cấu trúc chuỗi JSON, thay vào đó hãy dùng dấu nháy đơn (').";
+
+            // 1. Tạo phần contents
+            Map<String, Object> textPart = Map.of("text", systemInstruction);
+            Map<String, Object> parts = Map.of("parts", List.of(textPart));
+
+            // ĐÃ SỬA: Định nghĩa cấu trúc Schema để ép kiểu JSON trả về tuyệt đối chính xác
+            Map<String, Object> properties = Map.of(
+                    "call_script", Map.of("type", "STRING"),
+                    "sms_template", Map.of("type", "STRING"),
+                    "objection_handling", Map.of("type", "STRING")
+            );
+            Map<String, Object> responseSchema = Map.of(
+                    "type", "OBJECT",
+                    "properties", properties,
+                    "required", List.of("call_script", "sms_template", "objection_handling")
+            );
+
+            // 2. Tạo generationConfig
+            Map<String, Object> generationConfig = new HashMap<>();
+            generationConfig.put("maxOutputTokens", 8192); // Tăng token lên tối đa để tránh bị ngắt đuôi JSON
+            generationConfig.put("responseMimeType", "application/json");
+            generationConfig.put("responseSchema", responseSchema); // Gắn kèm schema vào cấu hình
+
+            // 3. Gộp chung vào payload lớn để gửi đi
+            Map<String, Object> rootPayload = Map.of(
+                    "contents", List.of(parts),
+                    "generationConfig", generationConfig
+            );
+
+            String jsonPayload = objectMapper.writeValueAsString(rootPayload);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
+                    .uri(URI.create(apiUrl))
                     .header("Content-Type", "application/json")
                     .header("X-goog-api-key", apiKey)
-                    .timeout(java.time.Duration.ofSeconds(15))
+                    .timeout(java.time.Duration.ofSeconds(60))
                     .POST(HttpRequest.BodyPublishers.ofString(jsonPayload, java.nio.charset.StandardCharsets.UTF_8))
                     .build();
 
@@ -82,40 +126,31 @@ public class AiAnalysisServiceImpl implements AiAnalysisService {
                 return fallback;
             }
 
-            String responseBodyStr = response.body();
-            Map<String, Object> responseMap = objectMapper.readValue(responseBodyStr, Map.class);
-
+            Map<String, Object> responseMap = objectMapper.readValue(response.body(), Map.class);
             List<Map<String, Object>> candidates = (List<Map<String, Object>>) responseMap.get("candidates");
+
             if (candidates != null && !candidates.isEmpty()) {
                 Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
                 List<Map<String, Object>> resParts = (List<Map<String, Object>>) content.get("parts");
                 if (resParts != null && !resParts.isEmpty()) {
                     String aiJsonText = (String) resParts.get(0).get("text");
 
-                    if (aiJsonText != null) {
-                        aiJsonText = aiJsonText.replace("```json", "")
-                                .replace("```", "")
-                                .trim();
+                    if (aiJsonText != null && !aiJsonText.isBlank()) {
+                        // ĐÃ SỬA: Do bật ALLOW_UNESCAPED_CONTROL_CHARS nên dòng này sẽ parse cực kỳ mượt mà
+                        Map<String, Object> aiData = objectMapper.readValue(aiJsonText.trim(), Map.class);
 
-                        Map<String, Object> aiData = objectMapper.readValue(aiJsonText, Map.class);
-                        AiResultDto resultDto = new AiResultDto();
-                        resultDto.setResult((String) aiData.get("result"));
-                        resultDto.setPotentialStatus((String) aiData.get("potential_status"));
-
-                        Object retryTimeObj = aiData.get("nextRetryTime");
-                        if (retryTimeObj != null && retryTimeObj instanceof String) {
-                            resultDto.setNextRetryTime((String) retryTimeObj);
-                        }
+                        AiSuggestionResponseDto resultDto = new AiSuggestionResponseDto();
+                        resultDto.setCallScript((String) aiData.get("call_script"));
+                        resultDto.setSmsTemplate((String) aiData.get("sms_template"));
+                        resultDto.setObjectionHandling((String) aiData.get("objection_handling"));
 
                         return resultDto;
                     }
                 }
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (Exception e) {
             System.err.println("Lỗi xử lý gọi AI bằng HttpClient: " + e.getMessage());
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
+            e.printStackTrace();
         }
         return fallback;
     }

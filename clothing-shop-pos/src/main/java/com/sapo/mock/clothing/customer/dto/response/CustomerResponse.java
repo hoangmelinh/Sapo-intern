@@ -25,6 +25,7 @@ public class CustomerResponse {
     private CustomerStatusEnum status;
     private Instant createdAt;
     private Integer rewardPoints;
+    private BigDecimal totalSpent;
 
     private String email;
 
@@ -59,6 +60,8 @@ public class CustomerResponse {
         private Instant receivedAt;             // Ngày nhận
         private Instant expiredAt;              // Hạn sử dụng
         private Instant usedAt;                // Ngày đã dùng (null nếu chưa dùng)
+        private Integer usedOrderId;           // ID đơn hàng đã dùng
+        private String usedOrderCode;          // Mã đơn hàng đã dùng
     }
 
 }

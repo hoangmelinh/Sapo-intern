@@ -31,6 +31,9 @@ public class CustomerServiceImpl implements CustomerService {
     @Autowired
     private CustomerVoucherRepository customerVoucherRepository;
 
+    @Autowired
+    private com.sapo.mock.clothing.order.repository.OrderRepository orderRepository;
+
     // Tìm kiếm khách hàng ACTIVE theo tên hoặc số điện thoại, trả về kết quả dưới dạng Page<CustomerResponse>.
     @Override
     public Page<CustomerResponse> searchCustomers(String keyword, Pageable pageable) {
@@ -57,6 +60,7 @@ public class CustomerServiceImpl implements CustomerService {
         response.setStatus(customer.getStatus());
         response.setCreatedAt(customer.getCreatedAt());
         response.setRewardPoints(customer.getRewardPoints());
+        response.setTotalSpent(customer.getTotalSpent());
 
         if (customer.getCustomerGroup() != null) {
             CustomerResponse.GroupInfo groupInfo = new CustomerResponse.GroupInfo();
@@ -81,6 +85,12 @@ public class CustomerServiceImpl implements CustomerService {
                 vi.setReceivedAt(cv.getReceivedAt());
                 vi.setExpiredAt(cv.getExpiredAt());
                 vi.setUsedAt(cv.getUsedAt());
+                if (cv.getOrderId() != null) {
+                    vi.setUsedOrderId(cv.getOrderId());
+                    orderRepository.findById(cv.getOrderId()).ifPresent(order -> {
+                        vi.setUsedOrderCode(order.getOrderNumber());
+                    });
+                }
                 return vi;
             }).collect(Collectors.toList());
             response.setVouchers(voucherInfos);
@@ -199,14 +209,14 @@ public class CustomerServiceImpl implements CustomerService {
     // 🌟 Override hàm lấy đơn hàng, gọi trực tiếp qua customerRepository gốc
     @Override
     @Transactional(readOnly = true)
-    public Page<OrderHistoryResponse> getCustomerOrders(Integer customerId, Pageable pageable) {
+    public Page<OrderHistoryResponse> getCustomerOrders(Integer customerId, String keyword, Pageable pageable) {
         // Kiểm tra xem khách hàng có tồn tại không trước khi lấy đơn
         if (!customerRepository.existsById(customerId)) {
             throw new RuntimeException("Không tìm thấy khách hàng với ID: " + customerId);
         }
 
         // Gọi câu Query lấy Order vừa khai báo trong CustomerRepository
-        Page<Order> orders = customerRepository.findOrdersByCustomerId(customerId, pageable);
+        Page<Order> orders = customerRepository.findOrdersByCustomerId(customerId, keyword, pageable);
 
         return orders.map(this::convertToOrderHistoryResponse);
     }
