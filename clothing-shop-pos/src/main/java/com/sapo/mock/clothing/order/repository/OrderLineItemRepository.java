@@ -34,4 +34,17 @@ public interface OrderLineItemRepository extends JpaRepository<OrderLineItem, In
             GROUP BY oli.order_id, pv.product_id
             """, nativeQuery = true)
     List<Object[]> findOrderProductPairsSince(@Param("cutoffDate") Instant cutoffDate);
+
+    /**
+     * Tính tổng số lượng bán được của từng Variant trong khoảng thời gian
+     */
+    @Query("""
+            SELECT oli.productSku, SUM(oli.quantity)
+            FROM OrderLineItem oli
+            JOIN oli.order o
+            WHERE o.createdAt >= :cutoffDate
+              AND o.status = com.sapo.mock.clothing.util.constant.OrderStatus.COMPLETED
+            GROUP BY oli.productSku
+            """)
+    List<Object[]> getVariantSoldQuantitySinceBySku(@Param("cutoffDate") Instant cutoffDate);
 }
