@@ -2,11 +2,18 @@ package com.sapo.mock.clothing.customer.controller;
 
 import com.sapo.mock.clothing.common.dto.response.RestResponse;
 import com.sapo.mock.clothing.customer.dto.event.OrderCompletedEvent;
+import com.sapo.mock.clothing.customer.dto.request.groupcustomer.CustomerGroupRequest;
 import com.sapo.mock.clothing.customer.dto.request.groupcustomer.MockOrderRequest;
+import com.sapo.mock.clothing.customer.dto.request.VoucherRequest;
+import com.sapo.mock.clothing.entity.Voucher;
 import com.sapo.mock.clothing.customer.dto.response.CustomerGroupResponse;
 import com.sapo.mock.clothing.customer.dto.response.CustomerResponse;
+import com.sapo.mock.clothing.customer.dto.response.VoucherResponse;
+import com.sapo.mock.clothing.customer.repository.VoucherRepository;
 import com.sapo.mock.clothing.customer.service.CustomerGroupService;
 import com.sapo.mock.clothing.customer.service.CustomerService;
+import com.sapo.mock.clothing.customer.service.scheduler.BirthdayVoucherScheduler;
+import com.sapo.mock.clothing.util.constant.VoucherCampaignStatusEnum;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -31,6 +38,12 @@ public class CustomerGroupController {
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
+
+    @Autowired
+    private BirthdayVoucherScheduler birthdayVoucherScheduler;
+
+    @Autowired
+    private VoucherRepository voucherRepository;
 
 
 
@@ -149,5 +162,111 @@ public class CustomerGroupController {
         return ResponseEntity.ok("Giả lập hoàn thành đơn hàng thành công! Đã phát sự kiện nhảy hạng tự động.");
     }
 
+
+
+
+    @PostMapping
+    public ResponseEntity<RestResponse<CustomerGroupResponse>> createGroup(@Valid @RequestBody CustomerGroupRequest request) {
+        CustomerGroupResponse result = groupService.createGroup(request);
+        return ResponseEntity.ok(new RestResponse<>(HttpStatus.CREATED.value(), null, "Tạo nhóm thành công", result));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<RestResponse<CustomerGroupResponse>> updateGroup(
+            @PathVariable Integer id,
+            @Valid @RequestBody CustomerGroupRequest request) {
+        CustomerGroupResponse result = groupService.updateGroup(id, request);
+        return ResponseEntity.ok(new RestResponse<>(HttpStatus.OK.value(), null, "Cập nhật nhóm thành công", result));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<RestResponse<Object>> deleteGroup(@PathVariable Integer id) {
+        groupService.deleteGroup(id);
+        return ResponseEntity.ok(new RestResponse<>(HttpStatus.OK.value(), null, "Xóa nhóm thành công", null));
+    }
+
+    @PostMapping("/sync-ranks")
+    public ResponseEntity<RestResponse<Object>> syncAllCustomerRanks() {
+        groupService.syncAllCustomerRanks();
+        return ResponseEntity.ok(new RestResponse<>(HttpStatus.OK.value(), null, "Đồng bộ phân hạng tất cả khách hàng thành công", null));
+    }
+
+    /**
+     * API kích hoạt thủ công luồng gửi voucher sinh nhật (dùng để test, không cần chờ 12h đêm)
+     * POST /api/crm/customer-groups/trigger-birthday-vouchers
+     */
+    @PostMapping("/trigger-birthday-vouchers")
+    public ResponseEntity<RestResponse<Object>> triggerBirthdayVouchers() {
+        birthdayVoucherScheduler.runNow();
+        return ResponseEntity.ok(new RestResponse<>(HttpStatus.OK.value(), null, "Kích hoạt gửi Voucher sinh nhật thành công! Kiểm tra Console để xem log chi tiết.", null));
+    }
+
+    @GetMapping("/vouchers")
+    public ResponseEntity<RestResponse<java.util.List<VoucherResponse>>> getAllVouchers(@RequestParam(required = false) VoucherCampaignStatusEnum status) {
+        java.util.List<VoucherResponse> vouchers = voucherRepository.findAll().stream()
+                .filter(v -> status == null || status.equals(v.getStatus()))
+                .map(v -> new VoucherResponse(v.getId(), v.getName(), v.getCode(), v.getDiscountAmount(), v.getMinOrderValue(), v.getStatus()))
+                .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(new RestResponse<>(HttpStatus.OK.value(), null, "Lấy danh sách voucher thành công", vouchers));
+    }
+
+    @PostMapping("/vouchers")
+    public ResponseEntity<RestResponse<VoucherResponse>> createVoucher(@Valid @RequestBody VoucherRequest request) {
+        if (voucherRepository.existsByCode(request.getCode())) {
+            return ResponseEntity.badRequest().body(new RestResponse<>(HttpStatus.BAD_REQUEST.value(), null, "Mã voucher đã tồn tại trong hệ thống, vui lòng chọn mã khác!", null));
+        }
+
+        Voucher voucher = new Voucher();
+        voucher.setName(request.getName());
+        voucher.setCode(request.getCode());
+        voucher.setDiscountAmount(request.getDiscountAmount());
+        voucher.setMinOrderValue(request.getMinOrderValue());
+        voucher.setStatus(VoucherCampaignStatusEnum.ACTIVE);
+        
+        voucher = voucherRepository.save(voucher);
+        
+        VoucherResponse response = new VoucherResponse(voucher.getId(), voucher.getName(), voucher.getCode(), voucher.getDiscountAmount(), voucher.getMinOrderValue(), voucher.getStatus());
+        return ResponseEntity.ok(new RestResponse<>(HttpStatus.OK.value(), null, "Tạo voucher thành công", response));
+    }
+    @PutMapping("/vouchers/{id}")
+    public ResponseEntity<RestResponse<VoucherResponse>> updateVoucher(@PathVariable Integer id, @Valid @RequestBody VoucherRequest request) {
+        Voucher voucher = voucherRepository.findById(id).orElse(null);
+        if (voucher == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new RestResponse<>(HttpStatus.NOT_FOUND.value(), null, "Không tìm thấy voucher này", null));
+        }
+
+        if (!voucher.getCode().equals(request.getCode()) && voucherRepository.existsByCode(request.getCode())) {
+            return ResponseEntity.badRequest().body(new RestResponse<>(HttpStatus.BAD_REQUEST.value(), null, "Mã voucher đã tồn tại trong hệ thống, vui lòng chọn mã khác!", null));
+        }
+
+        voucher.setName(request.getName());
+        voucher.setCode(request.getCode());
+        voucher.setDiscountAmount(request.getDiscountAmount());
+        voucher.setMinOrderValue(request.getMinOrderValue());
+        
+        voucher = voucherRepository.save(voucher);
+        
+        VoucherResponse response = new VoucherResponse(voucher.getId(), voucher.getName(), voucher.getCode(), voucher.getDiscountAmount(), voucher.getMinOrderValue(), voucher.getStatus());
+        return ResponseEntity.ok(new RestResponse<>(HttpStatus.OK.value(), null, "Cập nhật voucher thành công", response));
+    }
+
+    @PatchMapping("/vouchers/{id}/toggle")
+    public ResponseEntity<RestResponse<VoucherResponse>> toggleVoucherStatus(@PathVariable Integer id) {
+        Voucher voucher = voucherRepository.findById(id).orElse(null);
+        if (voucher == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new RestResponse<>(HttpStatus.NOT_FOUND.value(), null, "Không tìm thấy voucher này", null));
+        }
+
+        if (VoucherCampaignStatusEnum.ACTIVE.equals(voucher.getStatus())) {
+            voucher.setStatus(VoucherCampaignStatusEnum.INACTIVE);
+        } else {
+            voucher.setStatus(VoucherCampaignStatusEnum.ACTIVE);
+        }
+        voucher = voucherRepository.save(voucher);
+
+        VoucherResponse response = new VoucherResponse(voucher.getId(), voucher.getName(), voucher.getCode(), voucher.getDiscountAmount(), voucher.getMinOrderValue(), voucher.getStatus());
+        String msg = VoucherCampaignStatusEnum.ACTIVE.equals(voucher.getStatus()) ? "Đã bật phát hành voucher" : "Đã tạm dừng phát hành voucher";
+        return ResponseEntity.ok(new RestResponse<>(HttpStatus.OK.value(), null, msg, response));
+    }
 
 }

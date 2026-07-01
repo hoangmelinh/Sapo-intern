@@ -27,6 +27,26 @@ public class CampaignController {
     @Autowired
     private CampaignService campaignService;
 
+    @Autowired
+    private com.sapo.mock.clothing.customer.service.AiAnalysisService aiAnalysisService;
+
+    /**
+     * API: Gợi ý kịch bản gọi điện và SMS bằng AI
+     * Endpoint: GET /api/crm/campaigns/{campaignId}/customers/{customerId}/ai-suggest
+     */
+    @GetMapping("/{campaignId}/customers/{customerId}/ai-suggest")
+    public ResponseEntity<RestResponse<com.sapo.mock.clothing.customer.dto.response.AiSuggestionResponseDto>> suggestAiScript(
+            @PathVariable Integer campaignId,
+            @PathVariable Integer customerId) {
+        
+        com.sapo.mock.clothing.customer.dto.response.AiSuggestionResponseDto result = aiAnalysisService.suggestScriptAndSms(customerId, campaignId);
+        
+        RestResponse<com.sapo.mock.clothing.customer.dto.response.AiSuggestionResponseDto> response = new RestResponse<>(
+                HttpStatus.OK.value(), null, "Gợi ý kịch bản bằng AI thành công", result
+        );
+        return ResponseEntity.ok(response);
+    }
+
     /**
      * API dùng chung quét danh sách khách hàng theo từng loại chiến dịch
      */

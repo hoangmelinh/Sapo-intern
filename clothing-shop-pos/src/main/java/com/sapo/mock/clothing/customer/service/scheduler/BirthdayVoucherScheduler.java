@@ -40,42 +40,47 @@ public class BirthdayVoucherScheduler {
 //    @Scheduled(fixedRate = 10000)
     @Transactional
     public void scanAndIssueBirthdayVouchers() {
+        runNow();
+    }
+
+    /**
+     * Logic thực thi chính - tách ra để có thể gọi từ API thủ công khi test
+     */
+    @Transactional
+    public void runNow() {
         log.info(">>> [CRM VOUCHER] Bắt đầu tiến trình quét và phát hành Voucher sinh nhật tự động...");
 
         LocalDate today = LocalDate.now();
         int currentMonth = today.getMonthValue();
-        int currentDay = today.getDayOfMonth();
 
         // Mốc đầu tháng hiện tại để check trùng luồng Hạng Bạc
         Instant startOfMonth = today.with(TemporalAdjusters.firstDayOfMonth())
                 .atStartOfDay(ZoneId.systemDefault())
                 .toInstant();
 
-        // Mốc đầu ngày hôm nay để check trùng luồng Hạng Vàng
-        Instant startOfToday = today.atStartOfDay(ZoneId.systemDefault())
-                .toInstant();
-
         // Lấy dữ liệu 2 bản mẫu chiến dịch voucher từ DB
-        Voucher silverVoucher = voucherRepository.findByCode("CMSNBAC50K").orElse(null);
-        Voucher goldVoucher = voucherRepository.findByCode("CMSNVANG100K").orElse(null);
-
         // Lấy danh sách khách hàng ACTIVE sinh nhật trong tháng hiện tại
         List<Customer> birthdayCustomers = customerRepository.findActiveCustomersByBirthMonth(currentMonth, CustomerStatusEnum.ACTIVE);
 
         for (Customer customer : birthdayCustomers) {
+            // Bỏ qua nếu khách chưa có nhóm hoặc nhóm chưa cài voucher sinh nhật
             if (customer.getCustomerGroup() == null) continue;
 
-            RankCodeEnum rank = customer.getCustomerGroup().getCode();
-
-            // 1. LUỒNG HẠNG BẠC (SILVER): Quét liên tục mỗi ngày trong tháng sinh nhật (tự động phát bù/thăng hạng muộn)
-            if (rank == RankCodeEnum.SILVER && silverVoucher != null) {
-                issueVoucherIfNotExist(customer, silverVoucher, startOfMonth, getEndOfMonthInstant(today));
+            com.sapo.mock.clothing.entity.Voucher voucher = customer.getCustomerGroup().getBirthdayVoucher();
+            if (voucher == null) {
+                log.info(">> [CRM VOUCHER] Nhóm [{}] chưa cài voucher sinh nhật. Bỏ qua: {}",
+                        customer.getCustomerGroup().getName(), customer.getFullName());
+                continue;
             }
 
-            // 2. LUỒNG HẠNG VÀNG (GOLD): Nhận và dùng cả tháng sinh nhật (Giống Hạng Bạc)
-            if (rank == RankCodeEnum.GOLD && goldVoucher != null) {
-                issueVoucherIfNotExist(customer, goldVoucher, startOfMonth, getEndOfMonthInstant(today));
+            if (voucher.getStatus() != com.sapo.mock.clothing.util.constant.VoucherCampaignStatusEnum.ACTIVE) {
+                log.info(">> [CRM VOUCHER] Voucher sinh nhật của nhóm [{}] đang TẠM DỪNG (INACTIVE). Bỏ qua phát cho khách: {}",
+                        customer.getCustomerGroup().getName(), customer.getFullName());
+                continue;
             }
+
+            // Phát voucher (tự kiểm tra trùng lặp trong tháng)
+            issueVoucherIfNotExist(customer, voucher, startOfMonth, getEndOfMonthInstant(today));
         }
         log.info(">>> [CRM VOUCHER] Kết thúc tiến trình tự động quét phát hành Voucher an toàn.");
     }

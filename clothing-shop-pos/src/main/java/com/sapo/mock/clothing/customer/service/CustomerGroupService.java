@@ -1,5 +1,6 @@
 package com.sapo.mock.clothing.customer.service;
 
+import com.sapo.mock.clothing.customer.dto.request.groupcustomer.CustomerGroupRequest;
 import com.sapo.mock.clothing.customer.dto.response.CustomerGroupResponse;
 import com.sapo.mock.clothing.customer.dto.response.CustomerResponse;
 import org.springframework.data.domain.Page;
@@ -15,6 +16,12 @@ public interface CustomerGroupService {
     // Lấy chi tiết 1
     CustomerGroupResponse getGroupById(Integer id);
 
+    CustomerGroupResponse createGroup(CustomerGroupRequest request);
+    CustomerGroupResponse updateGroup(Integer id, CustomerGroupRequest request);
+    void deleteGroup(Integer id);
+
+    // Đồng bộ hạng cho tất cả khách hàng
+    void syncAllCustomerRanks();
 
 
 

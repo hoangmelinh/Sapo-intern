@@ -1,7 +1,7 @@
 package com.sapo.mock.clothing.customer.service;
 
-import com.sapo.mock.clothing.customer.dto.response.AiResultDto;
+import com.sapo.mock.clothing.customer.dto.response.AiSuggestionResponseDto;
 
 public interface AiAnalysisService {
-    AiResultDto analyzeNote(String note);
+    AiSuggestionResponseDto suggestScriptAndSms(Integer customerId, Integer campaignId);
 }

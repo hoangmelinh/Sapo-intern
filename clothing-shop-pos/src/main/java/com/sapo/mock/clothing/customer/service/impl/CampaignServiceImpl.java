@@ -162,43 +162,14 @@ public class CampaignServiceImpl implements CampaignService {
      careLog.setNextRetryAt(request.getNextRetryAt());
      careLog.setCalledAt(Instant.now());
 
-     // --- ĐOẠN XỬ LÝ AI ---
-     if (request.getResult() == null || "BO_TRONG".equals(request.getResult())) {
-         try {
-             AiResultDto aiResult = aiAnalysisService.analyzeNote(request.getNote());
-             
-             careLog.setResult(aiResult.getResult());
+     careLog.setResult(request.getResult() != null ? request.getResult() : "KHONG_XAC_DINH");
+     careLog.setPotentialStatus(request.getPotentialStatus() != null ? request.getPotentialStatus() : "KHONG_XAC_DINH");
 
-             // RIÊNG với trạng thái Tiềm năng/Không tiềm năng thì LUÔN LUÔN để AI tự phân tích và gán
-             careLog.setPotentialStatus(aiResult.getPotentialStatus()); 
-             
-             // Nếu AI đọc được thời gian gọi lại và nhân viên chưa tự chọn tay
-             if (aiResult.getNextRetryTime() != null && request.getNextRetryAt() == null) {
-                 try {
-                     careLog.setNextRetryAt(Instant.parse(aiResult.getNextRetryTime()));
-                 } catch (Exception e) {
-                     System.err.println("Lỗi parse ngày tháng từ AI: " + e.getMessage());
-                 }
-             }
-             
-             // Dịch ngầm sang True/False để không làm hỏng giao diện cũ của Customer
-             if ("TIEM_NANG".equals(aiResult.getPotentialStatus())) {
-                 customer.setIsPotential(true);
-             } else {
-                 customer.setIsPotential(false);
-             }
-         } catch (Exception e) {
-             System.err.println("Gặp lỗi gọi AI: " + e.getMessage());
-             careLog.setResult("KHONG_XAC_DINH");
-             careLog.setPotentialStatus("KHONG_XAC_DINH");
-         }
-     } else {
-         // KHI KHÔNG DÙNG AI (TỰ CHỌN KẾT QUẢ)
-         // KHÔNG MANG GHI CHÚ ĐI PHÂN TÍCH
-         careLog.setResult(request.getResult());
-         careLog.setPotentialStatus("KHONG_XAC_DINH");
+     if ("TIEM_NANG".equals(request.getPotentialStatus())) {
+         customer.setIsPotential(true);
+     } else if ("KHONG_TIEM_NANG".equals(request.getPotentialStatus())) {
+         customer.setIsPotential(false);
      }
-     // ---------------------
 
      careLogRepository.save(careLog);
      customerRepository.save(customer); // Lưu lại customer
@@ -212,6 +183,9 @@ public class CampaignServiceImpl implements CampaignService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhật ký chăm sóc với ID: " + id));
 
         careLog.setResult(request.getResult());
+        if (request.getPotentialStatus() != null) {
+            careLog.setPotentialStatus(request.getPotentialStatus());
+        }
         careLog.setNote(request.getNote());
         careLog.setNextRetryAt(request.getNextRetryAt());
 
@@ -251,6 +225,7 @@ public class CampaignServiceImpl implements CampaignService {
         res.setNote(customer.getNote());
         res.setCreatedAt(customer.getCreatedAt());
         res.setRewardPoints(customer.getRewardPoints());
+        res.setTotalSpent(customer.getTotalSpent());
 
         if (customer.getCustomerGroup() != null) {
             CustomerResponse.GroupInfo groupInfo = new CustomerResponse.GroupInfo();

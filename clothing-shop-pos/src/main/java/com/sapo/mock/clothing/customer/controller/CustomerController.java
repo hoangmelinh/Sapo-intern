@@ -70,7 +70,6 @@ public class CustomerController {
         int targetPage = (page <= 0) ? 1 : page;
         Pageable pageable = PageRequest.of(targetPage - 1, size, Sort.by("created_at").descending());
 
-
         Page<CustomerResponse> result = customerService.searchByBirthMonth(month, pageable);
 
         RestResponse<Page<CustomerResponse>> response = new RestResponse<>();
@@ -191,13 +190,14 @@ public class CustomerController {
     @GetMapping("/{customerId}/orders")
     public ResponseEntity<RestResponse<Page<OrderHistoryResponse>>> getCustomerOrders(
             @PathVariable Integer customerId,
+            @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "5") int size) {
 
         int targetPage = (page <= 0) ? 1 : page;
         Pageable pageable = PageRequest.of(targetPage - 1, size, org.springframework.data.domain.Sort.by("createdAt").descending());
 
-        Page<OrderHistoryResponse> result = customerService.getCustomerOrders(customerId, pageable);
+        Page<OrderHistoryResponse> result = customerService.getCustomerOrders(customerId, keyword, pageable);
 
         RestResponse<Page<OrderHistoryResponse>> response = new RestResponse<>();
         response.setStatusCode(HttpStatus.OK.value());

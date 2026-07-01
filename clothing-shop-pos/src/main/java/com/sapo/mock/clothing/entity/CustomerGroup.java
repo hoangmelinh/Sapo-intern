@@ -47,6 +47,11 @@ public class CustomerGroup {
     private BigDecimal minSpending; // Chi tiêu tối thiểu
     private BigDecimal maxSpending; // Chi tiêu tối đa
 
+    // Voucher sinh nhật dành cho hạng này (chủ cửa hàng tự chọn từ danh sách voucher đã tạo)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "birthday_voucher_id")
+    private com.sapo.mock.clothing.entity.Voucher birthdayVoucher;
+
     // Tự động sinh thời gian khi tạo mới nhóm
     @PrePersist
     public void prePersist() {
