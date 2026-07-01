@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -39,6 +40,7 @@ public class CustomerController {
      * Endpoint: GET /api/crm/customers/search?keyword=0987
      */
     @GetMapping("/search")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'VIEW_CUSTOMER', 'MANAGE_CUSTOMER', 'CREATE_ORDER')")
     public ResponseEntity<RestResponse<Page<CustomerResponse>>> searchCustomers(
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "0") int page,
@@ -62,6 +64,7 @@ public class CustomerController {
      * Endpoint: GET /api/crm/customers/birthday?month=06
      */
     @GetMapping("/birthday")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'VIEW_CUSTOMER', 'MANAGE_CUSTOMER', 'CREATE_ORDER')")
     public ResponseEntity<RestResponse<Page<CustomerResponse>>> getBirthdayCustomers(
             @RequestParam(required = false, defaultValue = "") String month,
             @RequestParam(defaultValue = "1") int page,
@@ -86,6 +89,7 @@ public class CustomerController {
      * Endpoint: GET /api/crm/customers/1
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'VIEW_CUSTOMER', 'MANAGE_CUSTOMER', 'CREATE_ORDER')")
     public ResponseEntity<RestResponse<CustomerResponse>> getCustomerDetail(@PathVariable Integer id) {
 
         // Gọi service lấy thông tin chi tiết
@@ -106,6 +110,7 @@ public class CustomerController {
      * Endpoint: POST /api/crm/customers
      */
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_CUSTOMER', 'CREATE_ORDER')")
     public ResponseEntity<RestResponse<CustomerResponse>> createCustomer(
             @Valid @RequestBody CustomerCreateRequest request) {
 
@@ -127,6 +132,7 @@ public class CustomerController {
      * Endpoint: PUT /api/crm/customers/11
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_CUSTOMER')")
     public ResponseEntity<RestResponse<CustomerResponse>> updateCustomer(
             @PathVariable Integer id,
             @Valid @RequestBody CustomerUpdateRequest request) {
@@ -149,6 +155,7 @@ public class CustomerController {
      * Endpoint: PATCH /api/crm/customers/11/deactivate
      */
     @PatchMapping("/{id}/deactivate")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_CUSTOMER')")
     public ResponseEntity<RestResponse<Void>> deactivateCustomer(@PathVariable Integer id) {
 
         // Gọi tầng service xử lý chuyển trạng thái sang INACTIVE
@@ -168,6 +175,7 @@ public class CustomerController {
      * Endpoint: PATCH /api/crm/customers/11/activate
      */
     @PatchMapping("/{id}/activate")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_CUSTOMER')")
     public ResponseEntity<RestResponse<Void>> activateCustomer(@PathVariable Integer id) {
 
         // Gọi tầng service xử lý chuyển trạng thái sang ACTIVE
@@ -188,6 +196,7 @@ public class CustomerController {
      * URL: GET /api/crm/customers/{customerId}/orders?page=1&size=5
      */
     @GetMapping("/{customerId}/orders")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'VIEW_CUSTOMER', 'MANAGE_CUSTOMER', 'CREATE_ORDER')")
     public ResponseEntity<RestResponse<Page<OrderHistoryResponse>>> getCustomerOrders(
             @PathVariable Integer customerId,
             @RequestParam(required = false) String keyword,
@@ -208,6 +217,7 @@ public class CustomerController {
     }
 
     @PostMapping("/import")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_CUSTOMER')")
     public ResponseEntity<?> importCustomersExcel(@RequestParam("file") MultipartFile file) {
         // 1. Kiểm tra file trống
         if (file.isEmpty()) {

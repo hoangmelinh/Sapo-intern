@@ -29,14 +29,14 @@ public class AdminUserController {
 	private AdminService adminService;
 
 	@GetMapping("/{id}")
-	@PreAuthorize("hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_USER')")
 	public ResponseEntity<RestResponse<UserResponse>> getEmployeeDetail(@PathVariable Integer id) {
 		UserResponse data = adminService.getEmployeeDetail(id);
 		return ResponseEntity.ok(new RestResponse<>(200, null, "Lấy chi tiết nhân viên thành công", data));
 	}
 
 	@GetMapping
-	@PreAuthorize("hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_USER')")
 	public ResponseEntity<RestResponse<Page<UserResponse>>> getAllEmployees(Pageable pageable,
 			@RequestParam(required = false) String search, @RequestParam(required = false) Boolean active) {
 
@@ -47,14 +47,14 @@ public class AdminUserController {
 	}
 
 	@PostMapping
-	@PreAuthorize("hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_USER')")
 	public ResponseEntity<RestResponse<UserResponse>> createEmployee(@Valid @RequestBody UserCreateRequest request) {
 		UserResponse createdUser = adminService.createEmployee(request);
 		return ResponseEntity.ok(new RestResponse<>(201, null, "Tạo nhân viên thành công", createdUser));
 	}
 
 	@PutMapping("/{id}")
-	@PreAuthorize("hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_USER')")
 	public ResponseEntity<RestResponse<UserResponse>> updateEmployee(@PathVariable Integer id, @Valid @RequestBody UserUpdateRequest request) {
 		UserResponse updatedUser = adminService.updateEmployee(id, request);
 		return ResponseEntity.ok(new RestResponse<>(200, null, "Cập nhật thông tin nhân viên thành công", updatedUser));
@@ -62,7 +62,7 @@ public class AdminUserController {
 
 	// Khóa tài khoản (Gửi status = false)
 	@PutMapping("/{id}/status")
-	@PreAuthorize("hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_USER')")
 	public ResponseEntity<RestResponse<String>> updateStatus(@PathVariable Integer id, @RequestParam boolean isActive) {
 		adminService.toggleEmployeeStatus(id, isActive);
 		return ResponseEntity.ok(new RestResponse<>(200, null, "Cập nhật trạng thái thành công", null));

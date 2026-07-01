@@ -15,8 +15,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
 import java.time.Instant;
 
 @RestController
@@ -51,6 +51,7 @@ public class CampaignController {
      * API dùng chung quét danh sách khách hàng theo từng loại chiến dịch
      */
     @GetMapping("/pending-customers")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'VIEW_CAMPAIGN', 'MANAGE_CAMPAIGN')")
     public ResponseEntity<RestResponse<Page<CustomerResponse>>> getPendingCustomers(
             @RequestParam(name = "type") CampaignType type,
             @RequestParam(defaultValue = "0") int page,
@@ -86,6 +87,7 @@ public class CampaignController {
      * Endpoint: GET /api/crm/campaigns/care-logs
      */
     @GetMapping("/care-logs")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'VIEW_CUSTOMER', 'MANAGE_CUSTOMER')")
     public ResponseEntity<RestResponse<Page<CareLogListResponse>>> getAllCareLogs(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -104,6 +106,7 @@ public class CampaignController {
      * Endpoint: GET /api/crm/campaigns/customers/{customerId}/care-logs
      */
     @GetMapping("/customers/{customerId}/care-logs")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'VIEW_CUSTOMER', 'MANAGE_CUSTOMER')")
     public ResponseEntity<RestResponse<Page<CareLogResponse>>> getCustomerCareLogs(
             @PathVariable Integer customerId,
             @RequestParam(defaultValue = "0") int page,
@@ -123,6 +126,7 @@ public class CampaignController {
      * Endpoint: POST /api/crm/campaigns/care-logs
      */
     @PostMapping("/care-logs")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_CUSTOMER')")
     public ResponseEntity<RestResponse<Void>> createCareLog(
             @jakarta.validation.Valid @RequestBody CareLogRequest request) {
 
@@ -149,6 +153,7 @@ public class CampaignController {
      * Endpoint: PUT /api/crm/campaigns/care-logs/{id}
      */
     @PutMapping("/care-logs/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_CUSTOMER')")
     public ResponseEntity<RestResponse<Void>> updateCareLog(
             @PathVariable Integer id,
             @jakarta.validation.Valid @RequestBody CareLogRequest request) {
@@ -171,6 +176,7 @@ public class CampaignController {
      * Endpoint: DELETE /api/crm/campaigns/care-logs/{id}
      */
     @DeleteMapping("/care-logs/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_CUSTOMER')")
     public ResponseEntity<RestResponse<Void>> deleteCareLog(@PathVariable Integer id) {
 
         campaignService.deleteCareLog(id);
@@ -190,6 +196,7 @@ public class CampaignController {
      * Endpoint: GET /api/crm/campaigns/care-logs/search
      */
     @GetMapping("/care-logs/search")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'VIEW_CUSTOMER', 'MANAGE_CUSTOMER')")
     public ResponseEntity<RestResponse<Page<CareLogListResponse>>> searchCareLogs(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String result,
@@ -218,6 +225,7 @@ public class CampaignController {
      * Endpoint: GET /api/crm/campaigns/care-logs/{id}
      */
     @GetMapping("/care-logs/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'VIEW_CUSTOMER', 'MANAGE_CUSTOMER')")
     public ResponseEntity<RestResponse<CareLogResponse>> getCareLogDetail(@PathVariable Integer id) {
 
         CareLogResponse result = campaignService.getCareLogDetail(id);

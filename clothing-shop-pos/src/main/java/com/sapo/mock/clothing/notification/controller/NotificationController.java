@@ -87,7 +87,7 @@ public class NotificationController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @ApiMessage("Xóa thông báo thành công")
     public ResponseEntity<Void> deleteNotification(@PathVariable Integer id) {
         notificationService.deleteNotification(id);
@@ -95,7 +95,7 @@ public class NotificationController {
     }
 
     @DeleteMapping
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @ApiMessage("Xóa tất cả thông báo thành công")
     public ResponseEntity<Void> deleteAllNotifications() {
         String username = SecurityUtil.getCurrentUserLogin()

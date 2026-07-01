@@ -21,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/recommendations")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SALE')")
+@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'VIEW_ORDER', 'CREATE_ORDER', 'VIEW_PRODUCT')")
 public class RecommendationController {
 
 	private final RecommendationService recommendationService;
@@ -38,7 +38,7 @@ public class RecommendationController {
 
 	// POST /api/recommendations/rebuild — Admin trigger tính lại rules
 	@PostMapping("/rebuild")
-	@PreAuthorize("hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
 	@ApiMessage("Tính toán lại luật gợi ý AI thành công")
 	public ResponseEntity<Map<String, Object>> rebuildRules() {
 		int count = aprioriService.computeAndSaveRules();

@@ -66,11 +66,15 @@ public class SecurityUtil {
 	public String createAccessToken(String username, ResLoginDTO dto) {
 		ResLoginDTO.UserInsideToken userInsideToken = buildUserInsideToken(dto);
 
+		java.util.List<String> authorities = new java.util.ArrayList<>();
+		if (dto.getUser().getRole() != null) authorities.add(dto.getUser().getRole());
+		if (dto.getUser().getPermissions() != null) authorities.addAll(dto.getUser().getPermissions());
+
 		Instant now = Instant.now();
 		JwtClaimsSet claims = JwtClaimsSet.builder().issuedAt(now)
 				.expiresAt(now.plus(accessTokenValidityInSeconds, ChronoUnit.SECONDS)).subject(username)
 				.claim("user", userInsideToken)
-				.claim("roles", dto.getUser().getRole())
+				.claim("roles", authorities)
 				.build();
 
 		return encodeJwt(claims);
@@ -86,11 +90,15 @@ public class SecurityUtil {
 	public String createRefreshToken(String username, ResLoginDTO dto) {
 		ResLoginDTO.UserInsideToken userInsideToken = buildUserInsideToken(dto);
 
+		java.util.List<String> authorities = new java.util.ArrayList<>();
+		if (dto.getUser().getRole() != null) authorities.add(dto.getUser().getRole());
+		if (dto.getUser().getPermissions() != null) authorities.addAll(dto.getUser().getPermissions());
+
 		Instant now = Instant.now();
 		JwtClaimsSet claims = JwtClaimsSet.builder().issuedAt(now)
 				.expiresAt(now.plus(refreshTokenValidityInSeconds, ChronoUnit.SECONDS)).subject(username)
 				.claim("user", userInsideToken)
-				.claim("roles", dto.getUser().getRole())
+				.claim("roles", authorities)
 				.build();
 
 		return encodeJwt(claims);

@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -40,6 +41,18 @@ public class GlobalExceptionHandler {
 		response.setStatusCode(HttpStatus.BAD_REQUEST.value());
 		response.setError("Dữ liệu đầu vào không hợp lệ");
 		response.setMessage(errorMessages.size() == 1 ? errorMessages.get(0) : errorMessages);
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+	}
+
+	/**
+	 * Xử lý lỗi thiếu hoặc sai định dạng request body (thiếu dữ liệu gửi lên)
+	 */
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	public ResponseEntity<RestResponse<Object>> handleHttpMessageNotReadableException(HttpMessageNotReadableException exception) {
+		RestResponse<Object> response = new RestResponse<>();
+		response.setStatusCode(HttpStatus.BAD_REQUEST.value());
+		response.setError("Dữ liệu gửi lên không hợp lệ hoặc bị trống");
+		response.setMessage("Hệ thống không thể đọc được dữ liệu. Vui lòng kiểm tra lại cấu trúc dữ liệu gửi lên.");
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 	}
 
