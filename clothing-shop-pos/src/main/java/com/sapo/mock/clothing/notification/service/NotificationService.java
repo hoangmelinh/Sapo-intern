@@ -159,6 +159,25 @@ public class NotificationService {
     }
 
     /**
+     * Xóa thông báo theo ID
+     */
+    @Transactional
+    public void deleteNotification(Integer id) {
+        Notification notification = notificationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông báo ID: " + id));
+        notificationRepository.delete(notification);
+    }
+
+    /**
+     * Xóa tất cả thông báo của user
+     */
+    @Transactional
+    public void deleteAllNotificationsForUser(String username) {
+        List<Notification> active = getNotificationsForUser(username);
+        notificationRepository.deleteAll(active);
+    }
+
+    /**
      * Gửi yêu cầu phê duyệt hủy đơn
      */
     @Transactional
