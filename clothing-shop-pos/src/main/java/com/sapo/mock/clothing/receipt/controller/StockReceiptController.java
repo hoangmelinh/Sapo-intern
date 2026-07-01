@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sapo.mock.clothing.common.dto.response.RestResponse;
@@ -33,6 +34,7 @@ public class StockReceiptController {
 
 	// 1. Tạo phiếu nhập kho (Bản nháp)
 	@PostMapping
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_RECEIPT')")
 	public ResponseEntity<RestResponse<StockReceiptResponse>> createReceipt(
 			@Valid @RequestBody StockReceiptRequest request) {
 		StockReceiptResponse receipt = receiptService.createReceipt(request, MOCK_USER_ID);
@@ -42,6 +44,7 @@ public class StockReceiptController {
 	}
 
 	@PutMapping("/{id}")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_RECEIPT')")
 	public ResponseEntity<RestResponse<StockReceiptResponse>> updateReceipt(
 			@PathVariable Integer id,
 			@Valid @RequestBody StockReceiptRequest request) {
@@ -53,6 +56,7 @@ public class StockReceiptController {
 
 	// 2. Duyệt phiếu nhập (Cộng tồn kho)
 	@PostMapping("/{id}/confirm")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_RECEIPT')")
 	public ResponseEntity<RestResponse<StockReceiptResponse>> confirmReceipt(@PathVariable Integer id) {
 		StockReceiptResponse receipt = receiptService.confirmReceipt(id, MOCK_USER_ID);
 		RestResponse<StockReceiptResponse> response = new RestResponse<>(200, null,
@@ -62,6 +66,7 @@ public class StockReceiptController {
 
 	// 2.5. Hủy duyệt phiếu nhập (Trừ tồn kho & rollback giá vốn)
 	@PostMapping("/{id}/cancel")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_RECEIPT')")
 	public ResponseEntity<RestResponse<StockReceiptResponse>> cancelReceipt(@PathVariable Integer id) {
 		StockReceiptResponse receipt = receiptService.cancelReceipt(id, MOCK_USER_ID);
 		RestResponse<StockReceiptResponse> response = new RestResponse<>(200, null,
@@ -71,6 +76,7 @@ public class StockReceiptController {
 
 	// 3. Xem chi tiết phiếu nhập
 	@GetMapping("/{id}")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'VIEW_RECEIPT', 'MANAGE_RECEIPT')")
 	public ResponseEntity<RestResponse<StockReceiptResponse>> getReceiptById(@PathVariable Integer id) {
 		StockReceiptResponse receipt = receiptService.getReceiptById(id);
 		RestResponse<StockReceiptResponse> response = new RestResponse<>(200, null,
@@ -79,6 +85,7 @@ public class StockReceiptController {
 	}
 
 	@GetMapping
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'VIEW_RECEIPT', 'MANAGE_RECEIPT')")
 	public ResponseEntity<RestResponse<Page<StockReceiptResponse>>> getAllReceipts(
 			@RequestParam(required = false) String search,
 			@RequestParam(required = false) ReceiptStatus status,

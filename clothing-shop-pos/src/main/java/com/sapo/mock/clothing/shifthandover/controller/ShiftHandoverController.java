@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -51,6 +52,7 @@ public class ShiftHandoverController {
 
     @GetMapping("/history")
     @ApiMessage("Lấy lịch sử bàn giao ca thành công")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'VIEW_SHIFT', 'MANAGE_SHIFT')")
     public ResponseEntity<List<ShiftHandover>> getHandoverHistory() {
         // Trả về lịch sử bàn giao ca
         return ResponseEntity.ok(shiftHandoverService.getHandoverHistory());

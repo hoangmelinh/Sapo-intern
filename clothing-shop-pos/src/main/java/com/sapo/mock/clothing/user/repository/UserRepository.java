@@ -26,4 +26,6 @@ public interface UserRepository extends JpaRepository<User, Integer>, JpaSpecifi
 	Optional<User> findById(Integer id);
 
 	boolean existsByPhoneAndIdNot(String phone, Integer id);
+
+	boolean existsByRoleId(Integer roleId);
 }

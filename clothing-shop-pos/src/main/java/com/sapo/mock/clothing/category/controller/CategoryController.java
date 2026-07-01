@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -30,6 +31,7 @@ public class CategoryController {
 	final ICategoryService categoryService;
 
 	@GetMapping()
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'VIEW_CATEGORY', 'MANAGE_CATEGORY', 'VIEW_PRODUCT', 'MANAGE_PRODUCT', 'CREATE_ORDER', 'VIEW_ORDER', 'VIEW_RECEIPT', 'CREATE_RETURN', 'VIEW_RETURN')")
 	public ResponseEntity<RestResponse<List<CategoryResponse>>> getAllCategory() {
 		List<CategoryResponse> categorys = categoryService.getAllCategory();
 		RestResponse<List<CategoryResponse>> response = new RestResponse<>(200, null, "Lấy danh mục sản phẩm",
@@ -39,6 +41,7 @@ public class CategoryController {
 	}
 
 	@GetMapping("/{id}")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'VIEW_CATEGORY', 'MANAGE_CATEGORY', 'VIEW_PRODUCT', 'MANAGE_PRODUCT', 'CREATE_ORDER', 'VIEW_ORDER', 'VIEW_RECEIPT', 'CREATE_RETURN', 'VIEW_RETURN')")
 	public ResponseEntity<RestResponse<CategoryResponse>> getCategoryById(@PathVariable Integer id) {
 		CategoryResponse categoryResponse = categoryService.getCategoryById(id);
 		RestResponse<CategoryResponse> response = new RestResponse<>(200, null, "Lấy chi tiết danh mục thành công",
@@ -47,6 +50,7 @@ public class CategoryController {
 	}
 
 	@PostMapping()
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_CATEGORY')")
 	public ResponseEntity<RestResponse<CategoryResponse>> creatCategory(@RequestBody CategoryRequest request) {
 
 		CategoryResponse categoryResponse = categoryService.creatCategory(request);
@@ -57,6 +61,7 @@ public class CategoryController {
 	}
 
 	@PutMapping("/{id}")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_CATEGORY')")
 	public ResponseEntity<RestResponse<CategoryResponse>> updateCategory(@PathVariable Integer id,
 			@RequestBody CategoryRequest request) {
 		CategoryResponse categoryResponse = categoryService.updateCategory(id, request);
@@ -66,6 +71,7 @@ public class CategoryController {
 	}
 
 	@DeleteMapping("/{id}")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_CATEGORY')")
 	public ResponseEntity<RestResponse<CategoryResponse>> deleteCategory(@PathVariable Integer id) {
 		CategoryResponse categoryResponse = categoryService.deleteCategory(id);
 		RestResponse<CategoryResponse> response = new RestResponse<>(200, null, "Xóa danh mục thành công",
@@ -74,6 +80,7 @@ public class CategoryController {
 	}
 
 	@DeleteMapping("/{id}/permanent")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_CATEGORY')")
 	public ResponseEntity<RestResponse<String>> hardDeleteCategory(@PathVariable Integer id) {
 		categoryService.hardDeleteCategory(id);
 		RestResponse<String> response = new RestResponse<>(200, null, "Xóa cứng danh mục thành công vĩnh viễn", null);
@@ -81,6 +88,7 @@ public class CategoryController {
 	}
 
 	@PatchMapping("/{id}/active")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_CATEGORY')")
 	public ResponseEntity<RestResponse<CategoryResponse>> toggleCategoryActive(@PathVariable Integer id,
 			@RequestParam boolean active) {
 

@@ -26,7 +26,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/returns")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SALE')")
+@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'VIEW_RETURN', 'CREATE_RETURN')")
 public class ReturnOrderController {
 
     private final ReturnOrderService returnOrderService;

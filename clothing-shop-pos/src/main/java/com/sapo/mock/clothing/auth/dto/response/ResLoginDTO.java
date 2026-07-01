@@ -24,6 +24,7 @@ public class ResLoginDTO {
         private String username;
         private String fullName;
         private String role;
+        private java.util.List<String> permissions;
     }
 
     @Getter

@@ -1,6 +1,5 @@
 package com.sapo.mock.clothing.admin.DTO;
 
-import com.sapo.mock.clothing.util.constant.RoleEnum;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -14,5 +13,5 @@ public class UserUpdateRequest {
     private String phone;
 
     @NotNull(message = "Vai trò không được để trống")
-    private RoleEnum role;
+    private Integer roleId;
 }

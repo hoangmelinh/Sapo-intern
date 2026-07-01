@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,6 +38,7 @@ public class ProductController {
 	}
 
 	@GetMapping()
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'VIEW_PRODUCT', 'MANAGE_PRODUCT', 'CREATE_ORDER', 'VIEW_ORDER', 'VIEW_RECEIPT', 'CREATE_RETURN', 'VIEW_RETURN')")
 	public ResponseEntity<RestResponse<Page<ProductResponse>>> getAllProducts(Pageable pageable,
 			@RequestParam(required = false) String search, @RequestParam(required = false) String productName,
 			@RequestParam(required = false) String sku, @RequestParam(required = false) Integer categoryID,
@@ -50,6 +52,7 @@ public class ProductController {
 	}
 
 	@GetMapping("/{id}")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'VIEW_PRODUCT', 'MANAGE_PRODUCT', 'CREATE_ORDER', 'VIEW_ORDER', 'VIEW_RECEIPT', 'CREATE_RETURN', 'VIEW_RETURN')")
 	public ResponseEntity<RestResponse<ProductResponse>> getProductByID(@PathVariable Integer id) {
 		ProductResponse products = productService.getProductByID(id);
 		RestResponse<ProductResponse> response = new RestResponse<>(200, null, "Lấy danh sách sản phẩm thành công",
@@ -59,6 +62,7 @@ public class ProductController {
 	}
 
 	@PostMapping()
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_PRODUCT')")
 	public ResponseEntity<RestResponse<ProductResponse>> creatProduct(@RequestBody ProductRequest request) {
 		String username = getUsername();
 		if (username == null) {
@@ -72,6 +76,7 @@ public class ProductController {
 	}
 
 	@PutMapping("/{id}")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_PRODUCT')")
 	public ResponseEntity<RestResponse<ProductResponse>> updateProduct(@PathVariable Integer id,
 			@RequestBody ProductRequest request) {
 		ProductResponse productResponse = productService.updateProduct(id, request);
@@ -82,6 +87,7 @@ public class ProductController {
 	}
 
 	@DeleteMapping("/{id}")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_PRODUCT')")
 	public ResponseEntity<RestResponse<ProductResponse>> deleteProduct(@PathVariable Integer id) {
 		ProductResponse productResponse = productService.deleteProduct(id);
 		RestResponse<ProductResponse> response = new RestResponse<>(204, null, "xóa sản phẩm thành công",
@@ -90,6 +96,7 @@ public class ProductController {
 	}
 
 	@DeleteMapping("/{id}/permanent")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_PRODUCT')")
 	public ResponseEntity<RestResponse<String>> hardDeleteProduct(@PathVariable Integer id) {
 		productService.hardDeleteProduct(id);
 		RestResponse<String> response = new RestResponse<>(200, null, "Xóa sản phẩm thành công vĩnh viễn", null);

@@ -92,11 +92,18 @@ public class AuthController {
         String currentUsername = SecurityUtil.getCurrentUserLogin().orElse("");
         User currentUser = userService.getUserByUsername(currentUsername);
 
+        String roleName = currentUser.getRole() != null ? currentUser.getRole().getName() : "ROLE_UNKNOWN";
+        java.util.List<String> perms = new java.util.ArrayList<>();
+        if (currentUser.getRole() != null && currentUser.getRole().getPermissions() != null) {
+            perms = currentUser.getRole().getPermissions().stream().map(Enum::name).collect(java.util.stream.Collectors.toList());
+        }
+
         ResLoginDTO.UserLogin userLogin = new ResLoginDTO.UserLogin(
                 currentUser.getId(),
                 currentUser.getUsername(),
                 currentUser.getFullName(),
-                currentUser.getRole().name());
+                roleName,
+                perms);
         return ResponseEntity.ok(new ResLoginDTO.UserGetAccount(userLogin));
     }
 
@@ -164,11 +171,17 @@ public class AuthController {
 
     private ResLoginDTO buildLoginResponse(User user) {
         ResLoginDTO dto = new ResLoginDTO();
+        String roleName = user.getRole() != null ? user.getRole().getName() : "ROLE_UNKNOWN";
+        java.util.List<String> perms = new java.util.ArrayList<>();
+        if (user.getRole() != null && user.getRole().getPermissions() != null) {
+            perms = user.getRole().getPermissions().stream().map(Enum::name).collect(java.util.stream.Collectors.toList());
+        }
         dto.setUser(new ResLoginDTO.UserLogin(
                 user.getId(),
                 user.getUsername(),
                 user.getFullName(),
-                user.getRole().name()));
+                roleName,
+                perms));
         return dto;
     }
 

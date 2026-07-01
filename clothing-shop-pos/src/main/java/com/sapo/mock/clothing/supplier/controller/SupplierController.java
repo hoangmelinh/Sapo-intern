@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sapo.mock.clothing.common.dto.response.RestResponse;
@@ -29,6 +30,7 @@ public class SupplierController {
 	private final ISupplierService supplierService;
 
 	@GetMapping
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'VIEW_SUPPLIER', 'MANAGE_SUPPLIER')")
 	public ResponseEntity<RestResponse<Page<SupplierResponse>>> getAllSuppliers(Pageable pageable,
 			@RequestParam(required = false) String search, @RequestParam(required = false) Boolean isActive) {
 		Page<SupplierResponse> suppliers = supplierService.getAllSuppliers(pageable, search, isActive);
@@ -38,6 +40,7 @@ public class SupplierController {
 	}
 
 	@GetMapping("/{id}")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'VIEW_SUPPLIER', 'MANAGE_SUPPLIER')")
 	public ResponseEntity<RestResponse<SupplierResponse>> getSupplierById(@PathVariable Integer id) {
 		SupplierResponse supplier = supplierService.getSupplierById(id);
 		RestResponse<SupplierResponse> response = new RestResponse<>(200, null, "Lấy thông tin nhà cung cấp thành công",
@@ -46,6 +49,7 @@ public class SupplierController {
 	}
 
 	@PostMapping
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_SUPPLIER')")
 	public ResponseEntity<RestResponse<SupplierResponse>> createSupplier(@Valid @RequestBody SupplierRequest request) {
 		SupplierResponse supplier = supplierService.createSupplier(request);
 		RestResponse<SupplierResponse> response = new RestResponse<>(201, null, "Tạo nhà cung cấp thành công",
@@ -54,6 +58,7 @@ public class SupplierController {
 	}
 
 	@PutMapping("/{id}")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_SUPPLIER')")
 	public ResponseEntity<RestResponse<SupplierResponse>> updateSupplier(@PathVariable Integer id,
 			@Valid @RequestBody SupplierRequest request) {
 		SupplierResponse supplier = supplierService.updateSupplier(id, request);
@@ -63,6 +68,7 @@ public class SupplierController {
 	}
 
 	@DeleteMapping("/{id}")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_SUPPLIER')")
 	public ResponseEntity<RestResponse<SupplierResponse>> deleteSupplier(@PathVariable Integer id) {
 		SupplierResponse supplier = supplierService.deleteSupplier(id);
 		RestResponse<SupplierResponse> response = new RestResponse<>(200, null,
@@ -71,6 +77,7 @@ public class SupplierController {
 	}
 
 	@PutMapping("/{id}/reactivate")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_SUPPLIER')")
 	public ResponseEntity<RestResponse<SupplierResponse>> reactivateSupplier(@PathVariable Integer id) {
 		SupplierResponse supplier = supplierService.reactivateSupplier(id);
 		RestResponse<SupplierResponse> response = new RestResponse<>(200, null,
@@ -79,6 +86,7 @@ public class SupplierController {
 	}
 
 	@DeleteMapping("/{id}/permanent")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'MANAGE_SUPPLIER')")
 	public ResponseEntity<RestResponse<Void>> hardDeleteSupplier(@PathVariable Integer id) {
 		supplierService.hardDeleteSupplier(id);
 		RestResponse<Void> response = new RestResponse<>(200, null, "Xóa vĩnh viễn nhà cung cấp thành công", null);

@@ -11,7 +11,7 @@ USE clothing_shop_db;
 -- 1. Insert 3 tài khoản test (password: 123456)
 INSERT INTO user (username, password_hash, full_name, phone, role, is_active, created_at) VALUES
 ('sale01', '$2a$10$26IhRLEHb3p5ZGoxsLiyCevhGyJyxhgF/eGszXGQyJxFH.QQJD9ya', 'NV Ban Hang',  '0901111111', 'ROLE_SALE', TRUE, NOW()),
-('cs01',   '$2a$10$26IhRLEHb3p5ZGoxsLiyCevhGyJyxhgF/eGszXGQyJxFH.QQJD9ya', 'NV CSKH',      '0902222222', 'ROLE_SALE',   TRUE, NOW()),
+('cs01',   '$2a$10$26IhRLEHb3p5ZGoxsLiyCevhGyJyxhgF/eGszXGQyJxFH.QQJD9ya', 'NV CSKH',      '0902222222', 'ROLE_CS',   TRUE, NOW()),
 ('wh01',   '$2a$10$26IhRLEHb3p5ZGoxsLiyCevhGyJyxhgF/eGszXGQyJxFH.QQJD9ya', 'NV Kho',       '0903333333', 'ROLE_WH',   TRUE, NOW()),
 ('admin', '$2a$10$26IhRLEHb3p5ZGoxsLiyCevhGyJyxhgF/eGszXGQyJxFH.QQJD9ya', 'Manager', '0903333366', 'ROLE_ADMIN', TRUE, NOW());
 

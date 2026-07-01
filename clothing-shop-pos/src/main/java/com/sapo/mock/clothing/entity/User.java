@@ -10,7 +10,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.sapo.mock.clothing.util.constant.RoleEnum;
+import com.sapo.mock.clothing.entity.Role;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -19,6 +19,9 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
@@ -55,10 +58,9 @@ public class User implements UserDetails {
 	@Column(length = 15, unique = true)
 	private String phone;
 
-	@NotNull(message = "Vai trò không được để trống")
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false)
-	private RoleEnum role;
+	@ManyToOne(fetch = jakarta.persistence.FetchType.EAGER)
+	@JoinColumn(name = "role_id")
+	private Role role;
 
 	@Column(name = "is_active", nullable = false)
 	private boolean active = true;
@@ -79,8 +81,12 @@ public class User implements UserDetails {
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
-		// TODO Auto-generated method stub
-		return Collections.singletonList(new SimpleGrantedAuthority(this.role.name()));
+		if (this.role != null && this.role.getPermissions() != null) {
+			return this.role.getPermissions().stream()
+					.map(permission -> new SimpleGrantedAuthority(permission.name()))
+					.toList();
+		}
+		return Collections.emptyList();
 	}
 
 	@JsonProperty("password")

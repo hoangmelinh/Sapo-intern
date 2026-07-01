@@ -63,7 +63,8 @@ public class NotificationService {
 
         // Tạo emitter với timeout 1 giờ
         SseEmitter emitter = new SseEmitter(3600000L);
-        SseSubscriber subscriber = new SseSubscriber(emitter, username, user.getRole().name(), user.getId());
+        String roleName = user.getRole() != null ? user.getRole().getName() : "ROLE_UNKNOWN";
+        SseSubscriber subscriber = new SseSubscriber(emitter, username, roleName, user.getId());
         subscribers.add(subscriber);
 
         emitter.onCompletion(() -> subscribers.remove(subscriber));
@@ -130,7 +131,8 @@ public class NotificationService {
         if (user == null) {
             throw new ResourceNotFoundException("Không tìm thấy người dùng: " + username);
         }
-        return notificationRepository.findActiveNotificationsForUser(user.getId(), user.getRole().name());
+        String roleName = user.getRole() != null ? user.getRole().getName() : "ROLE_UNKNOWN";
+        return notificationRepository.findActiveNotificationsForUser(user.getId(), roleName);
     }
 
     /**
