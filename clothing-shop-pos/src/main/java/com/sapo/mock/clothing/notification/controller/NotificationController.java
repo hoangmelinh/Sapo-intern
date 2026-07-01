@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -83,6 +84,24 @@ public class NotificationController {
     public ResponseEntity<Notification> rejectRequest(@PathVariable Integer id) {
         Notification rejected = notificationService.rejectRequest(id);
         return ResponseEntity.ok(rejected);
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @ApiMessage("Xóa thông báo thành công")
+    public ResponseEntity<Void> deleteNotification(@PathVariable Integer id) {
+        notificationService.deleteNotification(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @ApiMessage("Xóa tất cả thông báo thành công")
+    public ResponseEntity<Void> deleteAllNotifications() {
+        String username = SecurityUtil.getCurrentUserLogin()
+                .orElseThrow(() -> new BadRequestException("Vui lòng đăng nhập"));
+        notificationService.deleteAllNotificationsForUser(username);
+        return ResponseEntity.ok().build();
     }
 
     @Getter
