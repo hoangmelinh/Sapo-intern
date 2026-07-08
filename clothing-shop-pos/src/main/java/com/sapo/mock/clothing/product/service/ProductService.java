@@ -397,7 +397,6 @@ public class ProductService implements IProductService {
 
 		if (product.getVariants() != null && !product.getVariants().isEmpty()) {
 			List<ProductVariantResponse> variantDtos = product.getVariants().stream()
-					.filter(v -> v.getIsActive() != null && v.getIsActive())
 					.map(v -> {
 				ProductVariantResponse vRes = new ProductVariantResponse();
 				vRes.setId(v.getId());
